@@ -422,7 +422,7 @@ export function UpgraderPage() {
               )}
             >
               {forging ? <Loader2 size={16} className="animate-spin" /> : <Hammer size={17} />}
-              {forging ? 'Куём…' : 'Прокачать'}
+              {forging ? 'Улучшаем…' : 'Прокачать'}
             </button>
           </div>
         </div>

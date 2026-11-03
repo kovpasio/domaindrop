@@ -115,6 +115,9 @@ export function RoulettePage() {
         const domains = await api.feed(rollType, 60);
         setFeed(domains);
         setRibbon(fillRibbon(domains));
+        setRibbons([]);
+        setTripleTargets([]);
+        setTripleTargetIndexes([]);
         setAnimateTarget(0);
         setRibbonId((value) => value + 1);
       } catch {
@@ -130,6 +133,9 @@ export function RoulettePage() {
     if (!meta) return;
     setResult(null);
     setBatchResults(null);
+    setRibbons([]);
+    setTripleTargets([]);
+    setTripleTargetIndexes([]);
     setRevealed(false);
     void loadFeed(activeType);
   }, [activeType, meta, loadFeed]);
@@ -596,6 +602,8 @@ export function RoulettePage() {
             setRibbons([]);
             setTripleTargets([]);
             setTripleTargetIndexes([]);
+            setAnimateTarget(0);
+            setRibbonId((value) => value + 1);
             setTriple((value) => !value);
           }}
           className={cn(

@@ -39,7 +39,7 @@ export function LeaderboardPage() {
       <PageTitle
         eyebrow="global ranks"
         title="Рейтинг"
-        description="Топ-20 пилотов по силе коллекции — сумме цен всех непроданных доменов."
+        description="Топ-20 игроков по силе коллекции — сумме цен всех непроданных доменов."
         action={
           <button
             type="button"
@@ -101,7 +101,7 @@ export function LeaderboardPage() {
 
           {rest.length === 0 && top.length > 0 && (
             <div className="rounded-2xl border border-dashed border-white/[0.07] px-4 py-6 text-center text-[10px] text-white/25">
-              Пока только эти пилоты ворвались в таблицу.
+              Пока только эти игроки ворвались в таблицу.
             </div>
           )}
 

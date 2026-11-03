@@ -89,7 +89,7 @@ export function MorePage() {
           {[
             'Крути рулетку и собирай реальные доменные имена.',
             'Оставляй их в коллекции или продавай за монеты.',
-            'Апгрейди домены и поднимайся в рейтинге пилотов.',
+            'Апгрейди домены и поднимайся в рейтинге игроков.',
           ].map((step, index) => (
             <div key={step} className="flex items-start gap-2 text-[9px] leading-relaxed text-muted">
               <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-accent/15 text-[7px] font-bold text-accent-soft">
