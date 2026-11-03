@@ -40,11 +40,11 @@ PRICE_RANGES: dict[Rarity, tuple[int, int]] = {
 # More domains in the expensive tiers keep price gaps small enough for the
 # upgrader to find a close target nearly everywhere.
 RARITY_COUNTS: dict[Rarity, int] = {
-    "common": 40_000,
-    "rare": 30_000,
-    "epic": 15_000,
-    "legendary": 10_000,
-    "mythic": 5_500,
+    "common": 30_000,
+    "rare": 25_000,
+    "epic": 18_000,
+    "legendary": 15_000,
+    "mythic": 12_500,
 }
 
 
@@ -86,7 +86,9 @@ def _split_zone(domain: str) -> tuple[str, str]:
 def _price_at(index: int, count: int, low: int, high: int) -> int:
     if count <= 1:
         return low
-    return low + round(index * (high - low) / (count - 1))
+    # Geometric ladder: neighbouring prices differ by no more than ~1%
+    # (integer coins make the minimum Common step 1 D).
+    return int(round(low * (high / low) ** (index / (count - 1))))
 
 
 @lru_cache(maxsize=1)

@@ -48,9 +48,12 @@ async def preview_upgrade(
 
     spent = sum(int(item.domain.price) for item in items)
     sector = payload.chance_sector
-    exact_chance = payload.chance if payload.chance is not None else sector + 0.5
-    if not sector <= exact_chance <= sector + 0.99:
-        raise HTTPException(status_code=422, detail="Шанс вне выбранного сектора")
+    if payload.chance is None:
+        exact_chance = sector + 0.5
+    else:
+        exact_chance = payload.chance
+        if not 1 <= exact_chance <= 75:
+            raise HTTPException(status_code=422, detail="Шанс должен быть от 1 до 75%")
     # Target = stake * 100 / exact chance.
     theoretical_value = upgrade_target_value(spent, exact_chance)
     target_rarity = rarity_for_price(theoretical_value)
@@ -120,8 +123,8 @@ async def upgrade_domains(
     exact_chance = payload.chance
     if exact_chance is None:
         exact_chance = sector + rng.random() * 0.99
-    if not sector <= exact_chance <= sector + 0.99:
-        raise HTTPException(status_code=422, detail="Шанс вне выбранного сектора")
+    elif not 1 <= exact_chance <= 75:
+        raise HTTPException(status_code=422, detail="Шанс должен быть от 1 до 75%")
     exact_chance = round(exact_chance, 2)
     multiplier = 100 / exact_chance
     success = rng.random() * 100 < exact_chance

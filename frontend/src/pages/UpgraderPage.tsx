@@ -56,6 +56,7 @@ export function UpgraderPage() {
   const [meta, setMeta] = useState<Meta | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [sectorIndex, setSectorIndex] = useState(2);
+  const [customChance, setCustomChance] = useState<number | null>(null);
   const [quotedChance, setQuotedChance] = useState(() => 50 + Math.random() * 0.99);
   const [forging, setForging] = useState(false);
   const [arrowMoving, setArrowMoving] = useState(false);
@@ -67,10 +68,13 @@ export function UpgraderPage() {
 
   const sectors = meta?.upgrade_sectors?.length ? meta.upgrade_sectors : FALLBACK_SECTORS;
   const sector = sectors[Math.min(sectorIndex, sectors.length - 1)];
-  const chanceRange = meta?.economy.upgrade_chance_ranges?.[String(sector.sector)] ?? [
-    sector.sector,
-    sector.sector + 0.99,
-  ];
+  const chanceRange: [number, number] =
+    customChance !== null
+      ? [1, 75]
+      : (meta?.economy.upgrade_chance_ranges?.[String(sector.sector)] ?? [
+          sector.sector,
+          sector.sector + 0.99,
+        ]);
 
   function newQuote(value: number) {
     return Math.round((value + Math.random() * 0.99) * 100) / 100;
@@ -111,7 +115,7 @@ export function UpgraderPage() {
     }
     let cancelled = false;
     setPreview(null);
-    const nextQuote = newQuote(sector.sector);
+    const nextQuote = customChance ?? newQuote(sector.sector);
     setQuotedChance(nextQuote);
     const timer = window.setTimeout(() => {
       void api
@@ -132,7 +136,7 @@ export function UpgraderPage() {
       window.clearTimeout(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sum, sector.sector]);
+  }, [sum, sector.sector, customChance]);
 
   function toggle(id: number) {
     if (forging) return;
@@ -246,7 +250,7 @@ export function UpgraderPage() {
 
             <div className="mt-3 grid grid-cols-4 gap-1.5">
               {sectors.map((item, index) => {
-                const active = index === sectorIndex;
+                const active = customChance === null && index === sectorIndex;
                 return (
                   <button
                     key={item.sector}
@@ -254,6 +258,7 @@ export function UpgraderPage() {
                     disabled={forging}
                     onClick={() => {
                       setSectorIndex(index);
+                      setCustomChance(null);
                       hapticImpact('light');
                     }}
                     className={cn(
@@ -278,6 +283,35 @@ export function UpgraderPage() {
                   </button>
                 );
               })}
+            </div>
+
+            <div className="mt-3 rounded-xl border border-white/[0.07] bg-ink-900/70 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted/60">
+                  свой шанс
+                </span>
+                <span className="font-display text-[12px] font-semibold text-gold">
+                  {customChance !== null ? `${customChance}%` : 'авто'}
+                </span>
+              </div>
+              <input
+                type="range"
+                min={1}
+                max={75}
+                step={1}
+                value={customChance ?? Math.round(quotedChance)}
+                disabled={forging}
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  setCustomChance(value);
+                  setQuotedChance(value);
+                }}
+                className="mt-2 h-1.5 w-full cursor-pointer accent-[#F2A54A]"
+              />
+              <div className="mt-1 flex justify-between text-[7px] text-muted/50">
+                <span>1%</span>
+                <span>75%</span>
+              </div>
             </div>
 
             <div className="mt-3 grid grid-cols-3 gap-2 rounded-xl border border-white/[0.07] bg-ink-900/70 p-3">

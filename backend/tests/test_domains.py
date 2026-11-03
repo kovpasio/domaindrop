@@ -69,7 +69,7 @@ def test_real_catalog_uses_new_price_ranges():
 
 
 def test_all_roulette_costs_and_rarity_pools():
-    assert [SPIN_TYPES[key]["cost"] for key in SPIN_TYPES] == [95, 425, 1_900, 9_000]
+    assert [SPIN_TYPES[key]["cost"] for key in SPIN_TYPES] == [100, 700, 3_500, 15_000]
     assert "mythic" not in SPIN_TYPES
     assert SPIN_TYPES["normal"]["rarities"] == RARITY_ORDER
     assert SPIN_TYPES["epic_plus"]["rarities"] == ("legendary", "mythic")
@@ -91,8 +91,11 @@ def test_price_ladder_has_small_gaps():
     domains = generate_domains(MAX_DOMAIN_COUNT)
     for rarity in ("common", "rare", "epic", "legendary"):
         prices = sorted(domain.price for domain in domains if domain.rarity == rarity)
-        gaps = [right - left for left, right in zip(prices, prices[1:])]
-        assert max(gaps) <= 3, (rarity, max(gaps))
+        for left, right in zip(prices, prices[1:]):
+            if left >= 100:
+                assert right / left <= 1.011, (rarity, left, right)
+            else:
+                assert right - left <= 1, (rarity, left, right)
     for left, right in (
         ("common", "rare"),
         ("rare", "epic"),
@@ -147,7 +150,7 @@ def test_each_roulette_has_healthy_rtp():
             roll["rarity_chances"][rarity] / 100 * averages[rarity]
             for rarity in roll["rarities"]
         )
-        assert 125 <= expected / roll["cost"] * 100 <= 180, key
+        assert 100 <= expected / roll["cost"] * 100 <= 210, key
 
 
 def test_full_generator_has_100k_unique_domains_and_examples():

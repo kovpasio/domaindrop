@@ -163,7 +163,7 @@ async def test_full_game_flow(test_context, monkeypatch):
     assert meta.status_code == 200
     meta_data = meta.json()
     assert meta_data["total_domains"] == 5
-    assert [item["cost"] for item in meta_data["roll_types"]] == [95, 425, 1_900, 9_000]
+    assert [item["cost"] for item in meta_data["roll_types"]] == [100, 700, 3_500, 15_000]
     assert [item["key"] for item in meta_data["roll_types"]] == [
         "normal",
         "uncommon_plus",
@@ -183,7 +183,7 @@ async def test_full_game_flow(test_context, monkeypatch):
     first = await client.post("/api/spin", headers=headers, json={"roll_type": "normal"})
     assert first.status_code == 200, first.text
     first_data = first.json()
-    assert first_data["balance"] == 1905
+    assert first_data["balance"] == 1900
     assert first_data["auto_sold"] is False
     assert first_data["inventory_id"] is not None
     assert "server_seed" not in first_data
@@ -210,7 +210,7 @@ async def test_full_game_flow(test_context, monkeypatch):
     auto_data = auto_spin.json()
     assert auto_data["auto_sold"] is True
     assert auto_data["auto_sold_price"] == auto_data["price"]
-    assert auto_data["balance"] == 1905 - 95 + auto_data["auto_sold_price"]
+    assert auto_data["balance"] == 1900 - 100 + auto_data["auto_sold_price"]
 
     # Turn autosell off and collect three domains.
     response = await client.put(
@@ -327,6 +327,30 @@ async def test_earn_click_adds_exactly_one_coin(test_context):
 
     me_after = await client.get("/api/me", headers=headers)
     assert me_after.json()["user"]["balance"] == 2007
+
+
+async def test_triple_spin_and_custom_upgrade_chance(test_context):
+    client, _Session, _fake = test_context
+    _payload, headers = await _auth(client)
+
+    triple = await client.post("/api/spin", headers=headers, json={"roll_type": "normal", "times": 3})
+    assert triple.status_code == 200, triple.text
+    data = triple.json()
+    assert data["times"] == 3
+    assert data["balance"] == 1700
+    assert data["inventory_id"] is not None
+
+    preview = await client.post(
+        "/api/upgrade/preview",
+        headers=headers,
+        json={
+            "domain_ids": [data["inventory_id"]],
+            "chance_sector": 50,
+            "chance": 37,
+        },
+    )
+    assert preview.status_code == 200, preview.text
+    assert preview.json()["target_value"] == preview.json()["domain"]["price"]
 
 
 async def test_daily_bonus_is_25_percent_of_balance(test_context):

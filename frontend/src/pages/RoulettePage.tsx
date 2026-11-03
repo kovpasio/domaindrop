@@ -64,6 +64,7 @@ export function RoulettePage() {
   const closeMythicDrop = useCallback(() => setMythicDrop(null), []);
   const [revealed, setRevealed] = useState(false);
   const [loadingFeed, setLoadingFeed] = useState(true);
+  const [triple, setTriple] = useState(false);
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const tickTimers = useRef<number[]>([]);
@@ -214,13 +215,15 @@ export function RoulettePage() {
 
   async function spin() {
     if (!activeRoll || spinning || lock.current) return;
-    if ((me?.user.balance ?? 0) < activeRoll.cost) {
-      toast(`Недостаточно монет. Нужно ${formatNumber(activeRoll.cost)} D`, 'error');
+    const times = triple ? 3 : 1;
+    const cost = activeRoll.cost * times;
+    if ((me?.user.balance ?? 0) < cost) {
+      toast(`Недостаточно монет. Нужно ${formatNumber(cost)} D`, 'error');
       return;
     }
 
     lock.current = true;
-    incrementBalance(-activeRoll.cost);
+    incrementBalance(-cost);
     setSpinning(true);
     setRevealed(false);
     setResult(null);
@@ -232,7 +235,7 @@ export function RoulettePage() {
 
     try {
       const [response, freshFeed] = await Promise.all([
-        api.spin(activeType),
+        api.spin(activeType, times),
         api.feed(activeType, 60).catch(() => [] as Domain[]),
       ]);
 
@@ -260,7 +263,7 @@ export function RoulettePage() {
       );
     } catch (error) {
       lock.current = false;
-      incrementBalance(activeRoll.cost);
+      incrementBalance(cost);
       setSpinning(false);
       clearFinishTimer();
       toast(error instanceof Error ? error.message : 'Спин не удался', 'error');
@@ -269,7 +272,8 @@ export function RoulettePage() {
 
   if (!me) return null;
   const balance = me.user.balance;
-  const canAfford = activeRoll ? balance >= activeRoll.cost : false;
+  const activeCost = (activeRoll?.cost ?? 0) * (triple ? 3 : 1);
+  const canAfford = activeRoll ? balance >= activeCost : false;
   const disabled = !activeRoll || spinning || loadingFeed || !feed.length || !canAfford;
 
   return (
@@ -401,6 +405,40 @@ export function RoulettePage() {
         ))}
       </div>
 
+      <div className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-ink-800/60 px-3.5 py-2.5">
+        <div>
+          <div className="text-[10px] font-semibold text-paper">×3 прокрутка</div>
+          <div className="mt-0.5 text-[8px] text-muted">
+            Три спины за одну цену ×3. В результат идёт лучший домен.
+          </div>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={triple}
+          disabled={spinning}
+          onClick={() => {
+            hapticImpact('light');
+            setTriple((value) => !value);
+          }}
+          className={cn(
+            'relative h-6 w-11 shrink-0 rounded-full border transition',
+            triple
+              ? 'border-accent/50 bg-accent/80'
+              : 'border-white/[0.1] bg-white/[0.06]',
+            spinning && 'opacity-50',
+          )}
+        >
+          <span
+            className={cn(
+              'absolute top-0.5 h-4.5 w-4.5 rounded-full bg-white shadow transition-all',
+              triple ? 'left-[22px]' : 'left-0.5',
+            )}
+            style={{ width: 18, height: 18 }}
+          />
+        </button>
+      </div>
+
       <button
         type="button"
         onClick={() => void spin()}
@@ -417,7 +455,7 @@ export function RoulettePage() {
           ? 'Крутим…'
           : loadingFeed
             ? 'Загрузка пула…'
-            : `Крутить · ${formatNumber(activeRoll?.cost ?? 0)} D`}
+            : `Крутить${triple ? ' ×3' : ''} · ${formatNumber(activeCost)} D`}
       </button>
 
       {!canAfford && activeRoll && (
@@ -450,7 +488,9 @@ export function RoulettePage() {
                   <Coins size={10} /> продано
                 </span>
               ) : (
-                <span className="text-[8px] text-muted/60">#{result.id}</span>
+                <span className="text-[8px] text-muted/60">
+                  {result.times > 1 ? `×${result.times} · ` : ''}#{result.id}
+                </span>
               )}
             </div>
             <div className="mt-2.5 flex items-end justify-between gap-3">
@@ -553,9 +593,9 @@ export function RoulettePage() {
       {activeRoll && (
         <div className="rounded-xl border border-white/[0.05] bg-ink-800/50 px-3.5 py-3">
           <div className="flex items-center justify-between text-[9px] text-muted">
-            <span>Стоимость спина</span>
+            <span>Стоимость спина{triple ? ' ×3' : ''}</span>
             <span className="font-display text-[11px] font-semibold text-paper">
-              {formatNumber(activeRoll.cost)} D
+              {formatNumber(activeCost)} D
             </span>
           </div>
           <div className="mt-1.5 flex items-center justify-between text-[9px] text-muted">

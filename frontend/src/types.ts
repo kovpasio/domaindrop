@@ -118,6 +118,7 @@ export interface UpgradeSector {
 export interface SpinResult {
   id: number;
   roll_type: RollType;
+  times: number;
   domain: Domain;
   rarity: Rarity;
   price: number;

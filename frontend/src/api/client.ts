@@ -143,10 +143,10 @@ export const api = {
   feed: (rollType: RollType, limit = 60) =>
     request<Domain[]>(`/domains/feed?roll_type=${encodeURIComponent(rollType)}&limit=${limit}`),
 
-  spin: (rollType: RollType) =>
+  spin: (rollType: RollType, times: 1 | 3 = 1) =>
     request<SpinResult>('/spin', {
       method: 'POST',
-      body: JSON.stringify({ roll_type: rollType }),
+      body: JSON.stringify({ roll_type: rollType, times }),
     }),
 
   keepSpin: (spinId: number) =>

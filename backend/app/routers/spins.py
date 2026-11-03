@@ -12,7 +12,7 @@ from sqlalchemy.orm import noload
 
 from app.config import settings
 from app.database import get_db
-from app.economy import SPIN_TYPES
+from app.economy import RARITY_ORDER, SPIN_TYPES
 from app.models import Domain, Inventory, Spin, User
 from app.schemas import DomainOut, KeepSpinOut, SpinIn, SpinOut
 from app.security import get_current_user
@@ -71,6 +71,8 @@ async def spin(
     db: AsyncSession = Depends(get_db),
 ) -> SpinOut:
     roll = SPIN_TYPES[payload.roll_type]
+    times = payload.times
+    total_cost = roll["cost"] * times
     await _enforce_cooldown(user.id)
     now = datetime.now(timezone.utc)
 
@@ -84,28 +86,38 @@ async def spin(
         if locked_user is None:
             raise HTTPException(status_code=401, detail="Пользователь не найден")
 
-        if locked_user.balance < roll["cost"]:
+        if locked_user.balance < total_cost:
             raise HTTPException(
                 status_code=status.HTTP_402_PAYMENT_REQUIRED,
-                detail=f"Недостаточно монет: нужно {roll['cost']}",
+                detail=f"Недостаточно монет: нужно {total_cost}",
             )
 
         inventory_counts = await collection_breakdown(db, locked_user.id)
         progress = luck_profile(locked_user.total_spins, inventory_counts)
         chances = apply_luck(roll["rarity_chances"], progress.total_luck)
-        rarity = choose_rarity(roll, chances)
-        domain = await random_domain_in_rarity(db, rarity)
-        if domain is None:
-            raise HTTPException(status_code=503, detail="Пул доменов пуст")
+        domain: Domain | None = None
+        for _ in range(times):
+            rarity = choose_rarity(roll, chances)
+            candidate = await random_domain_in_rarity(db, rarity)
+            if candidate is None:
+                raise HTTPException(status_code=503, detail="Пул доменов пуст")
+            if domain is None or (
+                RARITY_ORDER.index(candidate.rarity),
+                int(candidate.price),
+            ) > (
+                RARITY_ORDER.index(domain.rarity),
+                int(domain.price),
+            ):
+                domain = candidate
 
         autosell = await get_or_create_settings(db, locked_user.id)
         price = int(domain.price)
         sale_price = price
         auto_sold = should_autosell(autosell, domain.rarity, price)
-        locked_user.balance -= roll["cost"]
+        locked_user.balance -= total_cost
         if auto_sold:
             locked_user.balance += sale_price
-        locked_user.total_spins += 1
+        locked_user.total_spins += times
 
         server_seed = secrets.token_hex(32)
         nonce = locked_user.total_spins
@@ -152,6 +164,7 @@ async def spin(
         return SpinOut(
             id=spin_row.id,
             roll_type=payload.roll_type,
+            times=times,
             domain=DomainOut.model_validate(domain),
             rarity=domain.rarity,
             price=price,
