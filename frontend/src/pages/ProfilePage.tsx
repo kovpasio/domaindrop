@@ -153,7 +153,7 @@ export function ProfilePage() {
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-1.5 text-[8px] font-bold uppercase tracking-[0.16em] text-teal">
-              <Sparkles size={11} /> пилотский уровень
+              <Sparkles size={11} /> уровень
             </div>
             <div className="mt-1 font-display text-lg font-semibold text-paper">
               {progress.level} · {progress.title}
@@ -231,7 +231,7 @@ export function ProfilePage() {
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <span className="font-display text-[12px] font-semibold text-paper">
-                Ежедневный бонус
+                Ежедневный бонус · 25%
               </span>
               {dailyReady && (
                 <span className="rounded bg-rarity-legendary/15 px-1.5 py-0.5 text-[7px] font-bold uppercase tracking-wider text-rarity-legendary">

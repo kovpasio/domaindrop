@@ -8,10 +8,11 @@ from app.economy import (
     POPULAR_PRICES,
     RARITY_ORDER,
     SPIN_TYPES,
-    UPGRADE_SECTORS,
     calculate_price,
+    daily_bonus_for,
     length_factor,
     rarity_for_price,
+    upgrade_target_value,
     weight_for,
 )
 from app.services.luck import apply_luck, luck_profile
@@ -40,9 +41,18 @@ def test_weight_applies_rarity_luck():
     assert weight_for(1, "common") == 2.5
 
 
-def test_upgrade_sectors_have_negative_ev():
-    for sector, multiplier in UPGRADE_SECTORS.items():
-        assert sector / 100 * multiplier < 1
+def test_daily_bonus_is_25_percent_with_cap():
+    assert daily_bonus_for(2_000) == 500
+    assert daily_bonus_for(4_000) == 1_000
+    assert daily_bonus_for(100_000_000) == 1_000_000
+    assert daily_bonus_for(0) == 0
+
+
+def test_upgrade_target_differs_from_stake_by_chance():
+    assert upgrade_target_value(1_000, 10) == 1_100
+    assert upgrade_target_value(1_000, 25.5) == 1_255
+    assert upgrade_target_value(1_000, 75) == 1_750
+    assert upgrade_target_value(0, 50) == 1
 
 
 def test_real_catalog_uses_new_price_ranges():
@@ -99,13 +109,21 @@ def test_level_and_inventory_luck_shift_chances():
     assert base.total_luck == 0
 
     with_inventory = luck_profile(
-        5,
+        25,
         {"common": 4, "rare": 2, "epic": 1, "legendary": 0, "mythic": 0},
     )
     assert with_inventory.level == 2
-    assert with_inventory.level_luck == pytest.approx(1.0)
+    assert with_inventory.level_luck == pytest.approx(1.5)
     assert with_inventory.inventory_luck > 0
     assert with_inventory.total_luck > with_inventory.level_luck
+
+    maximum = luck_profile(
+        5_000,
+        {"common": 10, "rare": 10, "epic": 10, "legendary": 10, "mythic": 10},
+    )
+    assert maximum.level == 20
+    assert maximum.next_level_spins is None
+    assert maximum.total_luck == pytest.approx(30.0)
 
     chances = SPIN_TYPES["normal"]["rarity_chances"]
     boosted = apply_luck(chances, 20)

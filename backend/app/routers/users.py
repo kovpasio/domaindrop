@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.database import get_db
+from app.economy import daily_bonus_for
 from app.models import User
 from app.schemas import DailyBonusOut, LuckProgressOut, MeOut, MeStats, UserOut
 from app.security import get_current_user
@@ -62,7 +63,11 @@ async def build_me(db: AsyncSession, user: User) -> MeOut:
             collection_by_rarity=by_rarity,
             rank=rank or None,
             total_players=players,
-            daily_bonus=settings.daily_bonus,
+            daily_bonus=daily_bonus_for(
+                user.balance,
+                settings.daily_bonus_percent,
+                settings.daily_bonus_max,
+            ),
             daily_available_at=next_bonus,
             can_daily_bonus=can_daily,
         ),
@@ -103,14 +108,19 @@ async def claim_daily_bonus(
                 headers={"Retry-After": str(retry_after)},
             )
 
+    amount = daily_bonus_for(
+        locked.balance,
+        settings.daily_bonus_percent,
+        settings.daily_bonus_max,
+    )
     locked.last_daily_bonus = now
-    locked.balance += settings.daily_bonus
+    locked.balance += amount
     await db.commit()
     await db.refresh(locked)
 
     return DailyBonusOut(
         rewarded=True,
-        amount=settings.daily_bonus,
+        amount=amount,
         balance=locked.balance,
         next_available_at=now + timedelta(hours=settings.daily_cooldown_hours),
         user=UserOut.model_validate(locked),

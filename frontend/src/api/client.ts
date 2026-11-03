@@ -213,10 +213,18 @@ export const api = {
       body: JSON.stringify(settings),
     }),
 
-  upgradePreview: (domainIds: number[], chanceSector: 10 | 25 | 50 | 75) =>
+  upgradePreview: (
+    domainIds: number[],
+    chanceSector: 10 | 25 | 50 | 75,
+    chance: number,
+  ) =>
     request<UpgradePreview>('/upgrade/preview', {
       method: 'POST',
-      body: JSON.stringify({ domain_ids: domainIds, chance_sector: chanceSector }),
+      body: JSON.stringify({
+        domain_ids: domainIds,
+        chance_sector: chanceSector,
+        chance,
+      }),
     }),
 
   upgrade: (domainIds: number[], chanceSector: 10 | 25 | 50 | 75, chance: number) =>

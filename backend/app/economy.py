@@ -135,14 +135,19 @@ RARITY_WEIGHT_LUCK: dict[Rarity, float] = {
     "mythic": 5.5,
 }
 
-# Upgrade sectors: sector -> multiplier. The exact chance is generated
-# uniformly inside [sector, sector + 0.99].
+# Upgrade target = stake + successful-chance percent. The exact chance is
+# generated uniformly inside [sector, sector + 0.99].
 UPGRADE_SECTORS: dict[int, float] = {
-    10: 9.0,
-    25: 3.75,
-    50: 1.9,
-    75: 1.2,
+    10: 1.10,
+    25: 1.25,
+    50: 1.50,
+    75: 1.75,
 }
+
+def upgrade_target_value(stake: int, chance: float) -> int:
+    """Target price = stake + the successful-upgrade percentage."""
+    return max(1, int(round(stake * (1 + chance / 100))))
+
 
 MAX_DOMAIN_COUNT = 100_500
 PREMIUM_PRICES: dict[tuple[str, str], int] = {
@@ -225,6 +230,11 @@ def weight_for(price: int, rarity: Rarity) -> float:
     """
     luck = RARITY_WEIGHT_LUCK[rarity]
     return luck / math.pow(max(1, price), 0.6)
+
+
+def daily_bonus_for(balance: int, percent: int = 25, maximum: int = 1_000_000) -> int:
+    """Daily bonus is a percentage of the current balance, capped."""
+    return min(maximum, max(0, int(balance * percent / 100)))
 
 
 def rarity_for_price(price: int) -> Rarity:

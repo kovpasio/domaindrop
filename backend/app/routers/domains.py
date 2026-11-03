@@ -84,7 +84,8 @@ async def get_meta(db: AsyncSession = Depends(get_db)) -> MetaOut:
         upgrade_sectors=[UpgradeSectorOut(**item) for item in upgrade_sectors_payload()],
         economy={
             "start_balance": settings.start_balance,
-            "daily_bonus": settings.daily_bonus,
+            "daily_bonus_percent": settings.daily_bonus_percent,
+            "daily_bonus_max": settings.daily_bonus_max,
             "daily_cooldown_hours": settings.daily_cooldown_hours,
             "spin_cooldown_seconds": settings.spin_cooldown_seconds,
             "total_domains": total_domains,

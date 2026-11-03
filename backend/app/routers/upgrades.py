@@ -9,7 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.economy import UPGRADE_SECTORS, rarity_for_price
+from app.economy import rarity_for_price, upgrade_target_value
 from app.models import Domain, Inventory, Upgrade, User
 from app.schemas import (
     DomainOut,
@@ -47,7 +47,12 @@ async def preview_upgrade(
         raise HTTPException(status_code=409, detail="Домены недоступны")
 
     spent = sum(int(item.domain.price) for item in items)
-    theoretical_value = max(1, int(round(spent * UPGRADE_SECTORS[payload.chance_sector])))
+    sector = payload.chance_sector
+    exact_chance = payload.chance if payload.chance is not None else sector + 0.5
+    if not sector <= exact_chance <= sector + 0.99:
+        raise HTTPException(status_code=422, detail="Шанс вне выбранного сектора")
+    # The target differs from the stake by exactly the successful chance.
+    theoretical_value = upgrade_target_value(spent, exact_chance)
     target_rarity = rarity_for_price(theoretical_value)
     domain = await db.scalar(
         select(Domain)
@@ -112,13 +117,13 @@ async def upgrade_domains(
 
     spent_value = sum(int(item.domain.price) for item in items)
     sector = payload.chance_sector
-    multiplier = UPGRADE_SECTORS[sector]
     exact_chance = payload.chance
     if exact_chance is None:
         exact_chance = sector + rng.random() * 0.99
     if not sector <= exact_chance <= sector + 0.99:
         raise HTTPException(status_code=422, detail="Шанс вне выбранного сектора")
     exact_chance = round(exact_chance, 2)
+    multiplier = 1 + exact_chance / 100
     success = rng.random() * 100 < exact_chance
     now = datetime.now(timezone.utc)
 
@@ -127,7 +132,7 @@ async def upgrade_domains(
         item.sold_at = now
         item.sold_price = 0
 
-    theoretical_value = max(1, int(round(spent_value * multiplier)))
+    theoretical_value = upgrade_target_value(spent_value, exact_chance)
     target_rarity = rarity_for_price(theoretical_value)
     target_value = theoretical_value
     won_domain: Domain | None = None

@@ -27,8 +27,9 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000,http://localhost:5173"
 
     # Game economy. The API exposes these numbers through /meta.
-    start_balance: int = 5_000
-    daily_bonus: int = 500
+    start_balance: int = 2_000
+    daily_bonus_percent: int = 25
+    daily_bonus_max: int = 1_000_000
     daily_cooldown_hours: int = 24
     spin_cooldown_seconds: int = 2
 

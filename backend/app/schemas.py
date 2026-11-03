@@ -172,6 +172,7 @@ class UpgradeIn(BaseModel):
 class UpgradePreviewIn(BaseModel):
     domain_ids: list[int] = Field(min_length=1, max_length=50)
     chance_sector: Literal[10, 25, 50, 75]
+    chance: float | None = Field(default=None, ge=0, le=100)
 
 
 class UpgradePreviewOut(BaseModel):

@@ -243,7 +243,8 @@ export interface Meta {
   upgrade_sectors: UpgradeSector[];
   economy: {
     start_balance: number;
-    daily_bonus: number;
+    daily_bonus_percent: number;
+    daily_bonus_max: number;
     daily_cooldown_hours: number;
     spin_cooldown_seconds: number;
     total_domains: number;

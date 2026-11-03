@@ -154,7 +154,7 @@ async def test_full_game_flow(test_context, monkeypatch):
 
     me = await client.get("/api/me", headers=headers)
     assert me.status_code == 200
-    assert me.json()["user"]["balance"] == 5000
+    assert me.json()["user"]["balance"] == 2000
     assert me.json()["user"]["created_at"].endswith(("+00:00", "Z"))
     assert me.json()["progress"]["level"] == 1
     assert me.json()["progress"]["total_luck"] == 0
@@ -183,7 +183,7 @@ async def test_full_game_flow(test_context, monkeypatch):
     first = await client.post("/api/spin", headers=headers, json={"roll_type": "normal"})
     assert first.status_code == 200, first.text
     first_data = first.json()
-    assert first_data["balance"] == 4905
+    assert first_data["balance"] == 1905
     assert first_data["auto_sold"] is False
     assert first_data["inventory_id"] is not None
     assert "server_seed" not in first_data
@@ -210,7 +210,7 @@ async def test_full_game_flow(test_context, monkeypatch):
     auto_data = auto_spin.json()
     assert auto_data["auto_sold"] is True
     assert auto_data["auto_sold_price"] == auto_data["price"]
-    assert auto_data["balance"] == 4905 - 95 + auto_data["auto_sold_price"]
+    assert auto_data["balance"] == 1905 - 95 + auto_data["auto_sold_price"]
 
     # Turn autosell off and collect three domains.
     response = await client.put(
@@ -313,7 +313,7 @@ async def test_earn_click_adds_exactly_one_coin(test_context):
     client, _Session, _fake = test_context
     _payload, headers = await _auth(client)
     me = await client.get("/api/me", headers=headers)
-    assert me.json()["user"]["balance"] == 5000
+    assert me.json()["user"]["balance"] == 2000
 
     first = await client.post("/api/earnings/click", headers=headers)
     second = await client.post("/api/earnings/click", headers=headers)
@@ -321,12 +321,12 @@ async def test_earn_click_adds_exactly_one_coin(test_context):
     assert first.status_code == 200, first.text
     assert second.status_code == 200, second.text
     assert held.status_code == 200, held.text
-    assert first.json() == {"earned": 1, "balance": 5001}
-    assert second.json() == {"earned": 1, "balance": 5002}
-    assert held.json() == {"earned": 5, "balance": 5007}
+    assert first.json() == {"earned": 1, "balance": 2001}
+    assert second.json() == {"earned": 1, "balance": 2002}
+    assert held.json() == {"earned": 5, "balance": 2007}
 
     me_after = await client.get("/api/me", headers=headers)
-    assert me_after.json()["user"]["balance"] == 5007
+    assert me_after.json()["user"]["balance"] == 2007
 
 
 async def test_admin_can_grant_balance_and_ban(test_context):
@@ -349,7 +349,7 @@ async def test_admin_can_grant_balance_and_ban(test_context):
         json={"amount": 500},
     )
     assert granted.status_code == 200, granted.text
-    assert granted.json()["balance"] == 5500
+    assert granted.json()["balance"] == 2500
 
     banned = await client.post(
         f"/api/admin/users/{normal_id}/ban",
