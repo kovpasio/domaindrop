@@ -329,6 +329,23 @@ async def test_earn_click_adds_exactly_one_coin(test_context):
     assert me_after.json()["user"]["balance"] == 2007
 
 
+async def test_daily_bonus_is_25_percent_of_balance(test_context):
+    client, _Session, _fake = test_context
+    _payload, headers = await _auth(client)
+
+    me = await client.get("/api/me", headers=headers)
+    assert me.json()["stats"]["daily_bonus"] == 500
+    assert me.json()["stats"]["can_daily_bonus"] is True
+
+    claimed = await client.post("/api/daily-bonus", headers=headers)
+    assert claimed.status_code == 200, claimed.text
+    assert claimed.json()["amount"] == 500
+    assert claimed.json()["balance"] == 2500
+
+    repeated = await client.post("/api/daily-bonus", headers=headers)
+    assert repeated.status_code == 429
+
+
 async def test_admin_can_grant_balance_and_ban(test_context):
     client, _Session, _fake = test_context
     normal_payload, normal_headers = await _auth(client, 900001, "regular")

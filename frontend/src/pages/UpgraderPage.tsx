@@ -29,10 +29,10 @@ import type {
 import { cn, formatNumber, hapticImpact, hapticNotify, RARITY } from '@/lib/utils';
 
 const FALLBACK_SECTORS: UpgradeSector[] = [
-  { sector: 10, multiplier: 1.1, ev: 0.11 },
-  { sector: 25, multiplier: 1.25, ev: 0.3125 },
-  { sector: 50, multiplier: 1.5, ev: 0.75 },
-  { sector: 75, multiplier: 1.75, ev: 1.3125 },
+  { sector: 10, multiplier: 10, ev: 1 },
+  { sector: 25, multiplier: 4, ev: 1 },
+  { sector: 50, multiplier: 2, ev: 1 },
+  { sector: 75, multiplier: 4 / 3, ev: 1 },
 ];
 
 const SECTOR_COLORS = ['#4D9BFF', '#B07CFF', '#F2A54A', '#43D6C5'];
@@ -102,7 +102,7 @@ export function UpgraderPage() {
   // Use the exact domain chosen for the preview. The raw multiplier target is
   // only a fallback while the preview request is in flight.
   const target =
-    preview?.target_value ?? Math.round(sum * (1 + quotedChance / 100));
+    preview?.target_value ?? Math.floor((sum * 100) / Math.max(quotedChance, 0.01));
 
   useEffect(() => {
     if (!selectedItems.length) {

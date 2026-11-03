@@ -48,10 +48,11 @@ def test_daily_bonus_is_25_percent_with_cap():
     assert daily_bonus_for(0) == 0
 
 
-def test_upgrade_target_differs_from_stake_by_chance():
-    assert upgrade_target_value(1_000, 10) == 1_100
-    assert upgrade_target_value(1_000, 25.5) == 1_255
-    assert upgrade_target_value(1_000, 75) == 1_750
+def test_upgrade_target_uses_inverse_chance():
+    assert upgrade_target_value(1_000, 10) == 10_000
+    assert upgrade_target_value(1_000, 25.5) == 3_921
+    assert upgrade_target_value(1_000, 75) == 1_333
+    assert upgrade_target_value(106_900, 50.36) == 212_271
     assert upgrade_target_value(0, 50) == 1
 
 
@@ -113,7 +114,7 @@ def test_level_and_inventory_luck_shift_chances():
         {"common": 4, "rare": 2, "epic": 1, "legendary": 0, "mythic": 0},
     )
     assert with_inventory.level == 2
-    assert with_inventory.level_luck == pytest.approx(1.5)
+    assert with_inventory.level_luck == pytest.approx(1.25)
     assert with_inventory.inventory_luck > 0
     assert with_inventory.total_luck > with_inventory.level_luck
 
@@ -123,7 +124,9 @@ def test_level_and_inventory_luck_shift_chances():
     )
     assert maximum.level == 20
     assert maximum.next_level_spins is None
-    assert maximum.total_luck == pytest.approx(30.0)
+    assert maximum.level_luck == pytest.approx(23.75)
+    assert maximum.inventory_luck == pytest.approx(5.0)
+    assert maximum.total_luck == pytest.approx(28.75)
 
     chances = SPIN_TYPES["normal"]["rarity_chances"]
     boosted = apply_luck(chances, 20)

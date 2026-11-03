@@ -135,18 +135,20 @@ RARITY_WEIGHT_LUCK: dict[Rarity, float] = {
     "mythic": 5.5,
 }
 
-# Upgrade target = stake + successful-chance percent. The exact chance is
-# generated uniformly inside [sector, sector + 0.99].
+# Upgrade target = stake * 100 / chance. The exact chance is generated
+# uniformly inside [sector, sector + 0.99].
 UPGRADE_SECTORS: dict[int, float] = {
-    10: 1.10,
-    25: 1.25,
-    50: 1.50,
-    75: 1.75,
+    10: 10.0,
+    25: 4.0,
+    50: 2.0,
+    75: 4 / 3,
 }
 
 def upgrade_target_value(stake: int, chance: float) -> int:
-    """Target price = stake + the successful-upgrade percentage."""
-    return max(1, int(round(stake * (1 + chance / 100))))
+    """Target price = stake * 100 / exact chance."""
+    if chance <= 0:
+        return max(1, stake)
+    return max(1, int(stake * 100 / chance))
 
 
 MAX_DOMAIN_COUNT = 100_500

@@ -28,7 +28,7 @@ LEVELS: tuple[tuple[int, str], ...] = (
     (5_000, "Абсолют"),
 )
 
-LEVEL_LUCK_STEP = 1.5
+LEVEL_LUCK_STEP = 1.25
 INVENTORY_LUCK = {
     "common": 0.03,
     "rare": 0.08,
@@ -36,7 +36,7 @@ INVENTORY_LUCK = {
     "legendary": 0.50,
     "mythic": 1.00,
 }
-INVENTORY_LUCK_CAP = 3.0
+INVENTORY_LUCK_CAP = 5.0
 TOTAL_LUCK_CAP = 30.0
 
 
