@@ -21,13 +21,30 @@ def choose_rarity(
 
 
 async def random_domain_in_rarity(db: AsyncSession, rarity: Rarity) -> Domain | None:
-    """Uniform random real domain inside one rarity tier."""
-    return await db.scalar(
-        select(Domain)
-        .where(Domain.is_available.is_(True), Domain.rarity == rarity)
-        .order_by(func.random())
-        .limit(1)
-    )
+    """Weighted real-domain pick: cheaper domains are more likely.
+
+    ``domains.weight`` already contains the inverse-price bias. PostgreSQL does
+    the weighted key extraction in SQL; the SQLite test path uses
+    ``random.choices`` over a compact catalog.
+    """
+    where = (Domain.is_available.is_(True), Domain.rarity == rarity)
+    if db.get_bind().dialect.name == "postgresql":
+        return await db.scalar(
+            select(Domain)
+            .where(*where)
+            .order_by(-func.ln(func.random()) / Domain.weight)
+            .limit(1)
+        )
+
+    rows = (
+        await db.execute(select(Domain.id, Domain.weight).where(*where))
+    ).all()
+    if not rows:
+        return None
+    ids = [row.id for row in rows]
+    weights = [max(float(row.weight), 1e-9) for row in rows]
+    chosen_id = random.choices(ids, weights=weights, k=1)[0]
+    return await db.get(Domain, chosen_id)
 
 
 async def weighted_random_domain(

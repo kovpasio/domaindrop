@@ -151,7 +151,7 @@ def upgrade_target_value(stake: int, chance: float) -> int:
     return max(1, int(stake * 100 / chance))
 
 
-MAX_DOMAIN_COUNT = 100_500
+MAX_DOMAIN_COUNT = 20_000
 PREMIUM_PRICES: dict[tuple[str, str], int] = {
     ("microsoft", ".com"): 1_000_000,
     ("google", ".com"): 1_100_000,

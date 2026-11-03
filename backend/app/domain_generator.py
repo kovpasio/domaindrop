@@ -40,11 +40,11 @@ PRICE_RANGES: dict[Rarity, tuple[int, int]] = {
 # More domains in the expensive tiers keep price gaps small enough for the
 # upgrader to find a close target nearly everywhere.
 RARITY_COUNTS: dict[Rarity, int] = {
-    "common": 25_000,
-    "rare": 20_000,
-    "epic": 18_000,
-    "legendary": 17_500,
-    "mythic": 20_000,
+    "common": 5_000,
+    "rare": 4_000,
+    "epic": 4_000,
+    "legendary": 4_000,
+    "mythic": 3_000,
 }
 
 
@@ -62,16 +62,30 @@ class GeneratedDomain:
 def load_real_domains() -> tuple[str, ...]:
     if not REAL_DOMAINS_PATH.exists():
         raise RuntimeError(f"Real domain list is missing: {REAL_DOMAINS_PATH}")
-    names = tuple(
-        line.strip().lower()
-        for line in REAL_DOMAINS_PATH.read_text(encoding="utf-8").splitlines()
-        if line.strip()
-    )
-    if len(names) < MAX_DOMAIN_COUNT:
-        raise RuntimeError(
-            f"Real domain list has {len(names)} names, expected {MAX_DOMAIN_COUNT}"
-        )
-    return names
+    buckets: dict[str, list[str]] = {zone: [] for zone in ZONES}
+    with REAL_DOMAINS_PATH.open(encoding="utf-8") as source:
+        for line in source:
+            name = line.strip().lower()
+            if not name:
+                continue
+            for zone in ZONES:
+                if name.endswith(zone):
+                    buckets[zone].append(name)
+                    break
+    if any(len(bucket) < MAX_DOMAIN_COUNT // len(ZONES) for bucket in buckets.values()):
+        raise RuntimeError("Real domain list does not cover all zones")
+
+    quota = MAX_DOMAIN_COUNT // len(ZONES)
+    names = [name for zone in ZONES for name in buckets[zone][:quota]]
+    # Keep the fixed popular names even if they are below the compact quota.
+    required = {f"{name}{zone}" for name, zone in POPULAR_PRICES}
+    selected = set(names)
+    for missing in required - selected:
+        for index in range(len(names) - 1, -1, -1):
+            if names[index] not in required:
+                names[index] = missing
+                break
+    return tuple(names)
 
 
 def _split_zone(domain: str) -> tuple[str, str]:
