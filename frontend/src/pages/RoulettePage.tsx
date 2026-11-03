@@ -915,11 +915,11 @@ export function RoulettePage() {
               {RARITY[rarity].label}
             </span>
             <span className="text-[9px] text-muted">
-              {rarity === 'common' && '100 000 — 249 999 D'}
-              {rarity === 'rare' && '250 000 — 999 999 D'}
-              {rarity === 'epic' && '1 000 000 — 3 999 999 D'}
-              {rarity === 'legendary' && '4 000 000 — 9 999 999 D'}
-              {rarity === 'mythic' && '10 000 000+ D'}
+              {rarity === 'common' && '40 — 99 D'}
+              {rarity === 'rare' && '100 — 999 D'}
+              {rarity === 'epic' && '1 000 — 4 999 D'}
+              {rarity === 'legendary' && '5 000 — 24 999 D'}
+              {rarity === 'mythic' && '25 000+ D'}
             </span>
           </div>
         ))}

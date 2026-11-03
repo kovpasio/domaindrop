@@ -30,11 +30,11 @@ SEED = 20261026
 # Contiguous rarity bands: the last Common price and the first Rare price are
 # neighbours, and so on through the whole ladder.
 PRICE_RANGES: dict[Rarity, tuple[int, int]] = {
-    "common": (100_000, 249_999),
-    "rare": (250_000, 999_999),
-    "epic": (1_000_000, 3_999_999),
-    "legendary": (4_000_000, 9_999_999),
-    "mythic": (10_000_000, 10_000_000),
+    "common": (40, 99),
+    "rare": (100, 999),
+    "epic": (1_000, 4_999),
+    "legendary": (5_000, 24_999),
+    "mythic": (25_000, 150_000),
 }
 
 # More domains in the expensive tiers keep price gaps small enough for the

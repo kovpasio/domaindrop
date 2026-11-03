@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowUpFromLine,
-  ArrowUpRight,
   ChevronRight,
   Coins,
   Gift,
@@ -115,14 +114,6 @@ export function ProfilePage() {
               <span className="mb-0.5 text-[10px] font-semibold text-muted">D</span>
             </div>
           </div>
-          <Link
-            to="/roulette"
-            onClick={() => hapticImpact('light')}
-            className="flex items-center gap-1.5 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-[10px] font-semibold text-accent-soft transition active:scale-95"
-          >
-            Крутить
-            <ArrowUpRight size={12} />
-          </Link>
         </div>
 
         <div className="mt-2 grid grid-cols-3 gap-2">

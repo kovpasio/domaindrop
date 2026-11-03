@@ -71,6 +71,9 @@ def luck_profile(total_spins: int, inventory_counts: dict[str, int]) -> LuckProf
     threshold, title = LEVELS[index]
     next_threshold = LEVELS[index + 1][0] if index + 1 < len(LEVELS) else None
     level_luck = index * LEVEL_LUCK_STEP
+    # The final level is a bigger step: +2.5% instead of +1.25%.
+    if index == len(LEVELS) - 1:
+        level_luck += LEVEL_LUCK_STEP
     inv_luck = inventory_luck(inventory_counts)
     total_luck = min(TOTAL_LUCK_CAP, level_luck + inv_luck)
     return LuckProfile(

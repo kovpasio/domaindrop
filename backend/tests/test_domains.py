@@ -25,12 +25,12 @@ def test_price_formula_and_rarity_thresholds():
     assert calculate_price("qwrt", ".xyz", "garbage", 1.0) == 9
     assert length_factor(2) == 5000
     assert length_factor(7) == 1
-    assert rarity_for_price(249_999) == "common"
-    assert rarity_for_price(250_000) == "rare"
-    assert rarity_for_price(999_999) == "rare"
-    assert rarity_for_price(1_000_000) == "epic"
-    assert rarity_for_price(4_000_000) == "legendary"
-    assert rarity_for_price(10_000_000) == "mythic"
+    assert rarity_for_price(99) == "common"
+    assert rarity_for_price(100) == "rare"
+    assert rarity_for_price(999) == "rare"
+    assert rarity_for_price(1_000) == "epic"
+    assert rarity_for_price(5_000) == "legendary"
+    assert rarity_for_price(25_000) == "mythic"
     assert rarity_for_price(100_000_000) == "mythic"
 
 
@@ -92,7 +92,10 @@ def test_price_ladder_has_small_gaps():
     for rarity in ("common", "rare", "epic", "legendary"):
         prices = sorted(domain.price for domain in domains if domain.rarity == rarity)
         for left, right in zip(prices, prices[1:]):
-            assert right / left <= 1.015, (rarity, left, right)
+            if left >= 100:
+                assert right / left <= 1.011, (rarity, left, right)
+            else:
+                assert right - left <= 1, (rarity, left, right)
     for left, right in (
         ("common", "rare"),
         ("rare", "epic"),
@@ -124,9 +127,9 @@ def test_level_and_inventory_luck_shift_chances():
     )
     assert maximum.level == 20
     assert maximum.next_level_spins is None
-    assert maximum.level_luck == pytest.approx(23.75)
+    assert maximum.level_luck == pytest.approx(25.0)
     assert maximum.inventory_luck == pytest.approx(5.0)
-    assert maximum.total_luck == pytest.approx(28.75)
+    assert maximum.total_luck == pytest.approx(30.0)
 
     chances = SPIN_TYPES["normal"]["rarity_chances"]
     boosted = apply_luck(chances, 20)
@@ -150,8 +153,8 @@ def test_full_generator_has_100k_unique_domains_and_examples():
     assert all(count > 0 for count in counts.values())
 
     common = [domain for domain in domains if domain.rarity == "common"]
-    assert sum(domain.price for domain in common) / len(common) > 100_000
-    assert sum(1 for domain in common if domain.price > 150_000) / len(common) > 0.3
+    assert sum(domain.price for domain in common) / len(common) > 35
+    assert sum(1 for domain in common if domain.price > 80) / len(common) > 0.1
     for (name, zone), price in POPULAR_PRICES.items():
         found = next(
             (domain for domain in domains if domain.name == name and domain.zone == zone),
