@@ -385,8 +385,8 @@ async def test_triple_spin_and_custom_upgrade_chance(test_context):
         headers=headers,
         json={
             "domain_ids": [data["items"][0]["inventory_id"]],
-            "chance_sector": 50,
-            "chance": 37,
+            "chance_sector": 75,
+            "chance": 75.17,
         },
     )
     assert preview.status_code == 200, preview.text

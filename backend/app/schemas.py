@@ -175,13 +175,13 @@ class AutosellSettingsIn(BaseModel):
 class UpgradeIn(BaseModel):
     domain_ids: list[int] = Field(min_length=1, max_length=50)
     chance_sector: Literal[10, 25, 50, 75]
-    chance: float | None = Field(default=None, ge=1, le=75)
+    chance: float | None = Field(default=None, ge=1, le=75.99)
 
 
 class UpgradePreviewIn(BaseModel):
     domain_ids: list[int] = Field(min_length=1, max_length=50)
     chance_sector: Literal[10, 25, 50, 75]
-    chance: float | None = Field(default=None, ge=1, le=75)
+    chance: float | None = Field(default=None, ge=1, le=75.99)
 
 
 class UpgradePreviewOut(BaseModel):
