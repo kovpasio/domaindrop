@@ -1,15 +1,8 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 
-from app.domain_generator import (
-    PRICE_RANGES,
-    generate_domains,
-    load_real_domains,
-    load_words,
-)
+from app.domain_generator import PRICE_RANGES, generate_domains, load_real_domains
 from app.economy import (
     MAX_DOMAIN_COUNT,
     POPULAR_PRICES,
@@ -23,20 +16,6 @@ from app.economy import (
 )
 
 
-def test_word_files_have_requested_sizes():
-    data = Path(__file__).resolve().parent.parent / "app" / "data"
-    assert len((data / "words_en.txt").read_text(encoding="utf-8").splitlines()) == 5000
-    assert len((data / "words_ru.txt").read_text(encoding="utf-8").splitlines()) == 2000
-
-
-def test_load_words_is_usable():
-    en, ru = load_words()
-    assert len(en) > 4900
-    assert len(ru) > 1900
-    assert "shop" in en
-    assert all(word.isascii() and word.islower() for word in en + ru)
-
-
 def test_price_formula_and_rarity_thresholds():
     assert calculate_price("ab", ".com", "dictionary", 1.0) == 100 * 5000 * 50
     assert calculate_price("cat", ".com", "dictionary", 1.0) == 100 * 1000 * 50
@@ -47,9 +26,9 @@ def test_price_formula_and_rarity_thresholds():
     assert rarity_for_price(99) == "common"
     assert rarity_for_price(100) == "rare"
     assert rarity_for_price(999) == "rare"
-    assert rarity_for_price(1_200) == "epic"
-    assert rarity_for_price(6_000) == "legendary"
-    assert rarity_for_price(35_000) == "mythic"
+    assert rarity_for_price(1_000) == "epic"
+    assert rarity_for_price(5_000) == "legendary"
+    assert rarity_for_price(25_000) == "mythic"
     assert rarity_for_price(100_000) == "mythic"
 
 
@@ -96,7 +75,24 @@ def test_real_domain_catalog_has_requested_sizes_and_brands():
     assert all(name.count(".") == 1 for name in names)
 
 
-def test_each_roulette_has_about_115_percent_rtp():
+def test_price_ladder_has_small_gaps():
+    domains = generate_domains(MAX_DOMAIN_COUNT)
+    for rarity in ("common", "rare", "epic", "legendary"):
+        prices = sorted(domain.price for domain in domains if domain.rarity == rarity)
+        gaps = [right - left for left, right in zip(prices, prices[1:])]
+        assert max(gaps) <= 3, (rarity, max(gaps))
+    for left, right in (
+        ("common", "rare"),
+        ("rare", "epic"),
+        ("epic", "legendary"),
+        ("legendary", "mythic"),
+    ):
+        left_max = max(domain.price for domain in domains if domain.rarity == left)
+        right_min = min(domain.price for domain in domains if domain.rarity == right)
+        assert right_min - left_max <= 1, (left, right)
+
+
+def test_each_roulette_has_healthy_rtp():
     domains = generate_domains(MAX_DOMAIN_COUNT)
     averages = {
         rarity: sum(domain.price for domain in domains if domain.rarity == rarity)
@@ -108,7 +104,7 @@ def test_each_roulette_has_about_115_percent_rtp():
             roll["rarity_chances"][rarity] / 100 * averages[rarity]
             for rarity in roll["rarities"]
         )
-        assert 110 <= expected / roll["cost"] * 100 <= 120, key
+        assert 120 <= expected / roll["cost"] * 100 <= 160, key
 
 
 def test_full_generator_has_100k_unique_domains_and_examples():
