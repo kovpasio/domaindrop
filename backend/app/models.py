@@ -190,7 +190,7 @@ class Upgrade(Base):
         ForeignKey("domains.id", ondelete="SET NULL"), nullable=True
     )
     chance: Mapped[Decimal] = mapped_column(Numeric(5, 2), nullable=False)
-    multiplier: Mapped[Decimal] = mapped_column(Numeric(4, 2), nullable=False)
+    multiplier: Mapped[Decimal] = mapped_column(Numeric(12, 6), nullable=False)
     success: Mapped[bool] = mapped_column(Boolean, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         UTCDateTime(), nullable=False, server_default=func.now()

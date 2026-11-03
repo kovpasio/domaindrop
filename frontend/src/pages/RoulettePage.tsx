@@ -70,6 +70,7 @@ export function RoulettePage() {
   const [batchBusyId, setBatchBusyId] = useState<number | null>(null);
   const [ribbons, setRibbons] = useState<Domain[][]>([]);
   const [tripleTargets, setTripleTargets] = useState<number[]>([]);
+  const [tripleTargetIndexes, setTripleTargetIndexes] = useState<number[]>([]);
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const tickTimers = useRef<number[]>([]);
@@ -334,17 +335,25 @@ export function RoulettePage() {
       const target = width / 2 - (TARGET_INDEX * ITEM_STEP + ITEM_WIDTH / 2);
 
       if ('items' in response) {
-        const nextRibbons = response.items.map((item) => {
-          const pool = (source.length ? source : [item.domain]).filter(
-            (domain) => domain.id !== item.domain.id,
-          );
+        const targetIndexes = response.items.map((_, index) => TARGET_INDEX + index * 3);
+        const nextRibbons = response.items.map((item, index) => {
+          const offset = source.length ? (index * 17) % source.length : 0;
+          const rotated = source.length
+            ? [...source.slice(offset), ...source.slice(0, offset)]
+            : [item.domain];
+          const pool = rotated.filter((domain) => domain.id !== item.domain.id);
           const next = fillRibbon(pool.length ? pool : [item.domain]);
-          next[TARGET_INDEX] = item.domain;
+          next[targetIndexes[index]] = item.domain;
           return next;
         });
         setResult(null);
         setRibbons(nextRibbons);
-        setTripleTargets(response.items.map(() => target));
+        setTripleTargetIndexes(targetIndexes);
+        setTripleTargets(
+          targetIndexes.map(
+            (index) => width / 2 - (index * ITEM_STEP + ITEM_WIDTH / 2),
+          ),
+        );
         setRibbonId((value) => value + 1);
         scheduleTicks();
         clearFinishTimer();
@@ -461,7 +470,12 @@ export function RoulettePage() {
         {triple ? (
           <div className="space-y-1.5">
             {[0, 1, 2].map((index) => {
-              const strip = ribbons[index]?.length ? ribbons[index] : fillRibbon(feed);
+              const offset = feed.length ? (index * 17) % feed.length : 0;
+              const idleFeed = feed.length
+                ? [...feed.slice(offset), ...feed.slice(0, offset)]
+                : [];
+              const strip = ribbons[index]?.length ? ribbons[index] : fillRibbon(idleFeed);
+              const targetIndex = tripleTargetIndexes[index] ?? TARGET_INDEX + index * 3;
               return (
                 <div
                   key={`triple-${index}`}
@@ -492,7 +506,7 @@ export function RoulettePage() {
                         <RibbonCard
                           key={`${ribbonId}-${index}-${itemIndex}-${domain.id}`}
                           domain={domain}
-                          highlighted={revealed && itemIndex === TARGET_INDEX}
+                          highlighted={revealed && itemIndex === targetIndex}
                         />
                       ))}
                     </motion.div>
@@ -569,7 +583,7 @@ export function RoulettePage() {
         <div>
           <div className="text-[10px] font-semibold text-paper">×3 прокрутка</div>
           <div className="mt-0.5 text-[8px] text-muted">
-            Три спины за одну цену ×3. В результат идёт лучший домен.
+            Три рулетки, три спины и три разные награды за цену ×3.
           </div>
         </div>
         <button
@@ -579,6 +593,9 @@ export function RoulettePage() {
           disabled={spinning}
           onClick={() => {
             hapticImpact('light');
+            setRibbons([]);
+            setTripleTargets([]);
+            setTripleTargetIndexes([]);
             setTriple((value) => !value);
           }}
           className={cn(
@@ -898,11 +915,11 @@ export function RoulettePage() {
               {RARITY[rarity].label}
             </span>
             <span className="text-[9px] text-muted">
-              {rarity === 'common' && '40 — 99 D'}
-              {rarity === 'rare' && '100 — 999 D'}
-              {rarity === 'epic' && '1 000 — 4 999 D'}
-              {rarity === 'legendary' && '5 000 — 24 999 D'}
-              {rarity === 'mythic' && '25 000+ D'}
+              {rarity === 'common' && '100 000 — 249 999 D'}
+              {rarity === 'rare' && '250 000 — 999 999 D'}
+              {rarity === 'epic' && '1 000 000 — 3 999 999 D'}
+              {rarity === 'legendary' && '4 000 000 — 9 999 999 D'}
+              {rarity === 'mythic' && '10 000 000+ D'}
             </span>
           </div>
         ))}

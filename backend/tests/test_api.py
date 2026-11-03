@@ -354,6 +354,18 @@ async def test_triple_spin_and_custom_upgrade_chance(test_context):
     assert preview.status_code == 200, preview.text
     assert preview.json()["target_value"] == preview.json()["domain"]["price"]
 
+    custom_upgrade = await client.post(
+        "/api/upgrade",
+        headers=headers,
+        json={
+            "domain_ids": [data["items"][0]["inventory_id"]],
+            "chance_sector": 50,
+            "chance": 1,
+        },
+    )
+    assert custom_upgrade.status_code == 200, custom_upgrade.text
+    assert custom_upgrade.json()["chance"] == 1
+
 
 async def test_daily_bonus_is_25_percent_of_balance(test_context):
     client, _Session, _fake = test_context

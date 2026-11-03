@@ -40,16 +40,16 @@ PATTERN_FACTOR: dict[str, float] = {
 }
 
 RARITY_META: dict[Rarity, dict] = {
-    "common": {"title": "Common", "min_price": 40, "max_price": 99, "color": "#8C98A8"},
-    "rare": {"title": "Rare", "min_price": 100, "max_price": 999, "color": "#4D9BFF"},
-    "epic": {"title": "Epic", "min_price": 1_000, "max_price": 4_999, "color": "#A879F0"},
+    "common": {"title": "Common", "min_price": 100_000, "max_price": 249_999, "color": "#8C98A8"},
+    "rare": {"title": "Rare", "min_price": 250_000, "max_price": 999_999, "color": "#4D9BFF"},
+    "epic": {"title": "Epic", "min_price": 1_000_000, "max_price": 3_999_999, "color": "#A879F0"},
     "legendary": {
         "title": "Legendary",
-        "min_price": 5_000,
-        "max_price": 24_999,
+        "min_price": 4_000_000,
+        "max_price": 9_999_999,
         "color": "#F0A64B",
     },
-    "mythic": {"title": "Mythic", "min_price": 25_000, "max_price": None, "color": "#F05D6E"},
+    "mythic": {"title": "Mythic", "min_price": 10_000_000, "max_price": None, "color": "#F05D6E"},
 }
 
 
@@ -78,7 +78,7 @@ SPIN_TYPES: dict[str, SpinType] = {
             "legendary": 0.25,
             "mythic": 0.01,
         },
-        "min_price": 40,
+        "min_price": 100_000,
         "description": "Все редкости · 100 монет",
     },
     "uncommon_plus": {
@@ -93,7 +93,7 @@ SPIN_TYPES: dict[str, SpinType] = {
             "legendary": 1.8,
             "mythic": 0.2,
         },
-        "min_price": 100,
+        "min_price": 250_000,
         "description": "Rare и выше · 700 монет",
     },
     "rare_plus": {
@@ -107,7 +107,7 @@ SPIN_TYPES: dict[str, SpinType] = {
             "legendary": 8.0,
             "mythic": 2.0,
         },
-        "min_price": 1_000,
+        "min_price": 1_000_000,
         "description": "Epic и выше · 3 500 монет",
     },
     "epic_plus": {
@@ -120,7 +120,7 @@ SPIN_TYPES: dict[str, SpinType] = {
             "legendary": 90.0,
             "mythic": 10.0,
         },
-        "min_price": 5_000,
+        "min_price": 4_000_000,
         "description": "Legendary и Mythic · 15 000 монет",
     },
 }
@@ -240,13 +240,13 @@ def daily_bonus_for(balance: int, percent: int = 25, maximum: int = 1_000_000) -
 
 
 def rarity_for_price(price: int) -> Rarity:
-    if price < 100:
+    if price < 250_000:
         return "common"
-    if price < 1_000:
+    if price < 1_000_000:
         return "rare"
-    if price < 5_000:
+    if price < 4_000_000:
         return "epic"
-    if price < 25_000:
+    if price < 10_000_000:
         return "legendary"
     return "mythic"
 
