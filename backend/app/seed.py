@@ -9,10 +9,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain_generator import generate_domains
 from app.economy import MAX_DOMAIN_COUNT
-from app.models import Domain
+from app.models import CatalogMeta, Domain
 
 logger = logging.getLogger(__name__)
 BATCH_SIZE = 5_000
+CATALOG_VERSION = "2026-11-03-ladder-1"
 
 
 async def seed_domains(
@@ -26,7 +27,14 @@ async def seed_domains(
         )
         or 0
     )
-    logger.info("Refreshing %s virtual domains (current available: %s)", target, available)
+    current_version = await session.scalar(
+        select(CatalogMeta.value).where(CatalogMeta.key == "catalog_version")
+    )
+    if current_version == CATALOG_VERSION and available >= target:
+        logger.info("Domain catalog is current (%s available)", available)
+        return
+
+    logger.info("Refreshing %s real domains (current available: %s)", target, available)
     domains = generate_domains(target)
 
     # Old catalogs are kept for historical inventory rows but removed from
@@ -65,5 +73,12 @@ async def seed_domains(
             len(domains),
         )
 
+    version_row = await session.scalar(
+        select(CatalogMeta).where(CatalogMeta.key == "catalog_version")
+    )
+    if version_row is None:
+        session.add(CatalogMeta(key="catalog_version", value=CATALOG_VERSION))
+    else:
+        version_row.value = CATALOG_VERSION
     await session.commit()
-    logger.info("Seeded %s virtual domains", len(domains))
+    logger.info("Seeded %s real domains", len(domains))

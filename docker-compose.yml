@@ -58,8 +58,8 @@ services:
         ]
       interval: 10s
       timeout: 5s
-      retries: 18
-      start_period: 120s
+      retries: 30
+      start_period: 600s
     restart: unless-stopped
 
   bot:

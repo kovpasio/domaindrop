@@ -75,6 +75,13 @@ class User(Base):
     settings: Mapped[UserSettings | None] = relationship(back_populates="user", uselist=False)
 
 
+class CatalogMeta(Base):
+    __tablename__ = "catalog_meta"
+
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    value: Mapped[str] = mapped_column(String(128), nullable=False)
+
+
 class Domain(Base):
     __tablename__ = "domains"
     __table_args__ = (
