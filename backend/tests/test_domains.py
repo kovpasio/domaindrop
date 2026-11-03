@@ -96,6 +96,14 @@ def test_price_ladder_has_small_gaps():
                 assert right / left <= 1.011, (rarity, left, right)
             else:
                 assert right - left <= 1, (rarity, left, right)
+    mythic_prices = sorted(
+        domain.price
+        for domain in domains
+        if domain.rarity == "mythic" and (domain.name, domain.zone) not in POPULAR_PRICES
+    )
+    for left, right in zip(mythic_prices, mythic_prices[1:]):
+        assert right / left <= 1.011, ("mythic", left, right)
+
     for left, right in (
         ("common", "rare"),
         ("rare", "epic"),

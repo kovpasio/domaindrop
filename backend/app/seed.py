@@ -13,7 +13,7 @@ from app.models import CatalogMeta, Domain
 
 logger = logging.getLogger(__name__)
 BATCH_SIZE = 5_000
-CATALOG_VERSION = "2026-11-06-rarity-ranges-4"
+CATALOG_VERSION = "2026-11-07-mythic-spread-5"
 
 
 async def seed_domains(

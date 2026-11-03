@@ -34,17 +34,17 @@ PRICE_RANGES: dict[Rarity, tuple[int, int]] = {
     "rare": (100, 999),
     "epic": (1_000, 4_999),
     "legendary": (5_000, 24_999),
-    "mythic": (25_000, 150_000),
+    "mythic": (25_000, 10_000_000),
 }
 
 # More domains in the expensive tiers keep price gaps small enough for the
 # upgrader to find a close target nearly everywhere.
 RARITY_COUNTS: dict[Rarity, int] = {
-    "common": 30_000,
-    "rare": 25_000,
+    "common": 25_000,
+    "rare": 20_000,
     "epic": 18_000,
-    "legendary": 15_000,
-    "mythic": 12_500,
+    "legendary": 17_500,
+    "mythic": 20_000,
 }
 
 

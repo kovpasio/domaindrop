@@ -919,7 +919,7 @@ export function RoulettePage() {
               {rarity === 'rare' && '100 — 999 D'}
               {rarity === 'epic' && '1 000 — 4 999 D'}
               {rarity === 'legendary' && '5 000 — 24 999 D'}
-              {rarity === 'mythic' && '25 000+ D'}
+              {rarity === 'mythic' && '25 000 — 10 000 000+ D'}
             </span>
           </div>
         ))}
