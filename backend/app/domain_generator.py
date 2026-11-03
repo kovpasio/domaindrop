@@ -55,6 +55,7 @@ class GeneratedDomain:
     price: int
     rarity: Rarity
     weight: float
+    is_available: bool = True
 
 
 @lru_cache(maxsize=1)

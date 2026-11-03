@@ -135,6 +135,7 @@ def test_full_generator_has_100k_unique_domains_and_examples():
     assert len(domains) == MAX_DOMAIN_COUNT
     assert len({(domain.name, domain.zone) for domain in domains}) == MAX_DOMAIN_COUNT
     assert all(f"{domain.name}{domain.zone}" in real_names for domain in domains)
+    assert all(domain.is_available for domain in domains)
     assert {domain.zone for domain in domains} == {".ru", ".com", ".io", ".xyz"}
     counts = {rarity: 0 for rarity in RARITY_ORDER}
     for domain in domains:
