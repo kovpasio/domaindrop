@@ -35,7 +35,8 @@
 Нужен Docker Compose v2.
 
 ```bash
-cd siteharnesstest
+git clone https://github.com/kovpasio/domaindrop.git
+cd domaindrop
 docker compose up --build
 ```
 
