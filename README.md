@@ -11,7 +11,6 @@
 
 - [Быстрый старт](#быстрый-старт)
 - [GitHub Codespaces](#github-codespaces)
-- [Деплой на Debian 13](#деплой-на-debian-13)
 - [Каталог доменов](#каталог-доменов)
 - [Рулетки](#рулетки)
 - [Экономика и EV](#экономика-и-ev)
@@ -27,7 +26,7 @@
 - [Тесты](#тесты)
 - [Переменные окружения](#переменные-окружения)
 - [Production checklist](#production-checklist)
-- [Источники словарей](#источники-словарей)
+- [Источники данных](#источники-данных)
 
 ---
 
@@ -36,7 +35,7 @@
 Нужен Docker Compose v2.
 
 ```bash
-cd C:\siteharnesstest
+cd siteharnesstest
 docker compose up --build
 ```
 
@@ -123,18 +122,6 @@ Codespaces подходит для теста, но не для постоянн
 
 ---
 
-## Деплой на Debian 13
-
-Пошаговая инструкция для VPS: установка Docker, `.env`, HTTPS через Caddy или Nginx, Telegram, firewall, бэкапы и **аккуратное удаление старого сайта**:
-
-**[DEPLOY_DEBIAN13.md](DEPLOY_DEBIAN13.md)**
-
-Коротко: на VPS нужны только Docker, Git и reverse-proxy. Python, Node.js, PostgreSQL и Redis работают внутри Docker Compose. Наружу открываются только 22/80/443.
-
-Для чистого Debian 13 с root-доступом есть автоматический скрипт `deploy/bootstrap-root.sh` — см. раздел «Быстрый root-скрипт» в инструкции.
-
----
-
 ## Каталог доменов
 
 При каждом старте создаётся и обновляется **100 500 реальных зарегистрированных доменов** в зонах `.ru`, `.com`, `.io`, `.xyz`.
@@ -149,7 +136,7 @@ Codespaces подходит для теста, но не для постоянн
 
 Реальные имена детерминированно раскладываются по редкостям и получают новую ценовую сетку: Common `40–90 D`, Rare `250–900 D`, Epic `1 200–4 500 D`, Legendary `6 000–25 000 D`, Mythic `35 000–150 000+ D`.
 
-### Формула цены
+### Диапазоны цен
 
 | Редкость | Диапазон цены |
 |---|---:|
@@ -738,12 +725,10 @@ pnpm build
 
 ---
 
-## Источники словарей
+## Источники данных
 
-- English frequency list: [first20hours/google-10000-english](https://github.com/first20hours/google-10000-english)
-- Russian frequency list: [hermitdave/FrequencyWords](https://github.com/hermitdave/FrequencyWords)
-
-Каталог имён — статический снимок Majestic Million, отфильтрованный по зонам `.com`, `.ru`, `.io`, `.xyz` и сохранённый в `backend/app/data/real_domains.txt`. Источник и ограничения описаны в `backend/app/data/REAL_DOMAINS_SOURCE.md`. Словарные файлы `words_en.txt` и `words_ru.txt` остаются в репозитории для старых тестов формулы цены, но имена каталога больше не генерируются из них.
+- Каталог доменов: [Majestic Million](https://downloads.majestic.com/majestic_million.csv), статический снимок в `backend/app/data/real_domains.txt`; ограничения — в `backend/app/data/REAL_DOMAINS_SOURCE.md`.
+- Имена — реальные зарегистрированные домены, но только игровые карточки. Приложение не претендует на права и не продаёт их.
 
 ---
 
