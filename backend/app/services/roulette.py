@@ -9,10 +9,14 @@ from app.economy import Rarity, SpinType
 from app.models import Domain
 
 
-def choose_rarity(roll: SpinType) -> Rarity:
-    """Choose a rarity from the configured per-roulette chance table."""
-    rarities = list(roll["rarity_chances"].keys())
-    weights = [roll["rarity_chances"][rarity] for rarity in rarities]
+def choose_rarity(
+    roll: SpinType,
+    chances: dict[Rarity, float] | None = None,
+) -> Rarity:
+    """Choose a rarity from the configured chance table (with luck applied)."""
+    table = chances or roll["rarity_chances"]
+    rarities = list(table.keys())
+    weights = [table[rarity] for rarity in rarities]
     return random.choices(rarities, weights=weights, k=1)[0]
 
 

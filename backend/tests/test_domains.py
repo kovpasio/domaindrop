@@ -14,6 +14,7 @@ from app.economy import (
     rarity_for_price,
     weight_for,
 )
+from app.services.luck import apply_luck, luck_profile
 
 
 def test_price_formula_and_rarity_thresholds():
@@ -57,7 +58,7 @@ def test_real_catalog_uses_new_price_ranges():
 
 
 def test_all_roulette_costs_and_rarity_pools():
-    assert [SPIN_TYPES[key]["cost"] for key in SPIN_TYPES] == [100, 450, 2_000, 10_000]
+    assert [SPIN_TYPES[key]["cost"] for key in SPIN_TYPES] == [95, 425, 1_900, 9_000]
     assert "mythic" not in SPIN_TYPES
     assert SPIN_TYPES["normal"]["rarities"] == RARITY_ORDER
     assert SPIN_TYPES["epic_plus"]["rarities"] == ("legendary", "mythic")
@@ -92,6 +93,27 @@ def test_price_ladder_has_small_gaps():
         assert right_min - left_max <= 1, (left, right)
 
 
+def test_level_and_inventory_luck_shift_chances():
+    base = luck_profile(0, {"common": 0, "rare": 0, "epic": 0, "legendary": 0, "mythic": 0})
+    assert base.level == 1
+    assert base.total_luck == 0
+
+    with_inventory = luck_profile(
+        5,
+        {"common": 4, "rare": 2, "epic": 1, "legendary": 0, "mythic": 0},
+    )
+    assert with_inventory.level == 2
+    assert with_inventory.level_luck == pytest.approx(1.0)
+    assert with_inventory.inventory_luck > 0
+    assert with_inventory.total_luck > with_inventory.level_luck
+
+    chances = SPIN_TYPES["normal"]["rarity_chances"]
+    boosted = apply_luck(chances, 20)
+    assert sum(boosted.values()) == pytest.approx(100)
+    assert boosted["common"] < chances["common"]
+    assert boosted["rare"] > chances["rare"]
+
+
 def test_each_roulette_has_healthy_rtp():
     domains = generate_domains(MAX_DOMAIN_COUNT)
     averages = {
@@ -104,7 +126,7 @@ def test_each_roulette_has_healthy_rtp():
             roll["rarity_chances"][rarity] / 100 * averages[rarity]
             for rarity in roll["rarities"]
         )
-        assert 120 <= expected / roll["cost"] * 100 <= 160, key
+        assert 125 <= expected / roll["cost"] * 100 <= 180, key
 
 
 def test_full_generator_has_100k_unique_domains_and_examples():

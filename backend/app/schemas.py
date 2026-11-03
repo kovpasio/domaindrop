@@ -75,9 +75,22 @@ class MeStats(BaseModel):
     can_daily_bonus: bool
 
 
+class LuckProgressOut(BaseModel):
+    level: int
+    title: str
+    total_spins: int
+    next_level_spins: int | None
+    spins_into_level: int
+    spins_to_next: int | None
+    level_luck: float
+    inventory_luck: float
+    total_luck: float
+
+
 class MeOut(BaseModel):
     user: UserOut
     stats: MeStats
+    progress: LuckProgressOut
 
 
 class SpinIn(BaseModel):

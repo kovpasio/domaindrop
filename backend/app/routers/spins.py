@@ -19,7 +19,9 @@ from app.security import get_current_user
 from app.services.autosell import get_or_create_settings, should_autosell
 from app.services.realtime import publish_drop
 from app.services.redis_client import redis_client
+from app.services.luck import apply_luck, luck_profile
 from app.services.roulette import choose_rarity, random_domain_in_rarity
+from app.services.stats import collection_breakdown
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/spin", tags=["spin"])
@@ -88,7 +90,10 @@ async def spin(
                 detail=f"Недостаточно монет: нужно {roll['cost']}",
             )
 
-        rarity = choose_rarity(roll)
+        inventory_counts = await collection_breakdown(db, locked_user.id)
+        progress = luck_profile(locked_user.total_spins, inventory_counts)
+        chances = apply_luck(roll["rarity_chances"], progress.total_luck)
+        rarity = choose_rarity(roll, chances)
         domain = await random_domain_in_rarity(db, rarity)
         if domain is None:
             raise HTTPException(status_code=503, detail="Пул доменов пуст")

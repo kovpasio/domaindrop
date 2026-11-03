@@ -69,7 +69,7 @@ SPIN_TYPES: dict[str, SpinType] = {
         "key": "normal",
         "title": "Обычная",
         "short_title": "Все",
-        "cost": 100,
+        "cost": 95,
         "rarities": RARITY_ORDER,
         "rarity_chances": {
             "common": 92.365,
@@ -79,13 +79,13 @@ SPIN_TYPES: dict[str, SpinType] = {
             "mythic": 0.005,
         },
         "min_price": 40,
-        "description": "Все редкости · 100 монет",
+        "description": "Все редкости · 95 монет",
     },
     "uncommon_plus": {
         "key": "uncommon_plus",
         "title": "Редкая+",
         "short_title": "Rare+",
-        "cost": 450,
+        "cost": 425,
         "rarities": ("rare", "epic", "legendary", "mythic"),
         "rarity_chances": {
             "rare": 99.90,
@@ -94,13 +94,13 @@ SPIN_TYPES: dict[str, SpinType] = {
             "mythic": 0.01,
         },
         "min_price": 100,
-        "description": "Rare и выше · 450 монет",
+        "description": "Rare и выше · 425 монет",
     },
     "rare_plus": {
         "key": "rare_plus",
         "title": "Эпическая+",
         "short_title": "Epic+",
-        "cost": 2_000,
+        "cost": 1_900,
         "rarities": ("epic", "legendary", "mythic"),
         "rarity_chances": {
             "epic": 99.80,
@@ -108,20 +108,20 @@ SPIN_TYPES: dict[str, SpinType] = {
             "mythic": 0.05,
         },
         "min_price": 1_000,
-        "description": "Epic и выше · 2 000 монет",
+        "description": "Epic и выше · 1 900 монет",
     },
     "epic_plus": {
         "key": "epic_plus",
         "title": "Легендарная+",
         "short_title": "Legendary+",
-        "cost": 10_000,
+        "cost": 9_000,
         "rarities": ("legendary", "mythic"),
         "rarity_chances": {
             "legendary": 99.60,
             "mythic": 0.40,
         },
         "min_price": 5_000,
-        "description": "Legendary и Mythic · 10 000 монет",
+        "description": "Legendary и Mythic · 9 000 монет",
     },
 }
 

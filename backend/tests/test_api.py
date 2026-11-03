@@ -156,12 +156,14 @@ async def test_full_game_flow(test_context, monkeypatch):
     assert me.status_code == 200
     assert me.json()["user"]["balance"] == 5000
     assert me.json()["user"]["created_at"].endswith(("+00:00", "Z"))
+    assert me.json()["progress"]["level"] == 1
+    assert me.json()["progress"]["total_luck"] == 0
 
     meta = await client.get("/api/meta")
     assert meta.status_code == 200
     meta_data = meta.json()
     assert meta_data["total_domains"] == 5
-    assert [item["cost"] for item in meta_data["roll_types"]] == [100, 450, 2_000, 10_000]
+    assert [item["cost"] for item in meta_data["roll_types"]] == [95, 425, 1_900, 9_000]
     assert [item["key"] for item in meta_data["roll_types"]] == [
         "normal",
         "uncommon_plus",
@@ -181,7 +183,7 @@ async def test_full_game_flow(test_context, monkeypatch):
     first = await client.post("/api/spin", headers=headers, json={"roll_type": "normal"})
     assert first.status_code == 200, first.text
     first_data = first.json()
-    assert first_data["balance"] == 4900
+    assert first_data["balance"] == 4905
     assert first_data["auto_sold"] is False
     assert first_data["inventory_id"] is not None
     assert "server_seed" not in first_data
@@ -208,7 +210,7 @@ async def test_full_game_flow(test_context, monkeypatch):
     auto_data = auto_spin.json()
     assert auto_data["auto_sold"] is True
     assert auto_data["auto_sold_price"] == auto_data["price"]
-    assert auto_data["balance"] == 4900 - 100 + auto_data["auto_sold_price"]
+    assert auto_data["balance"] == 4905 - 95 + auto_data["auto_sold_price"]
 
     # Turn autosell off and collect three domains.
     response = await client.put(
@@ -270,6 +272,13 @@ async def test_full_game_flow(test_context, monkeypatch):
     remaining = await client.get("/api/inventory", headers=headers)
     remaining_ids = [item["id"] for item in remaining.json()]
     assert len(remaining_ids) >= 1
+    preview = await client.post(
+        "/api/upgrade/preview",
+        headers=headers,
+        json={"domain_ids": remaining_ids[:1], "chance_sector": 75},
+    )
+    assert preview.status_code == 200, preview.text
+    assert preview.json()["target_value"] == preview.json()["domain"]["price"]
     upgrade = await client.post(
         "/api/upgrade",
         headers=headers,

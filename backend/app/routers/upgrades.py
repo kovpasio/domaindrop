@@ -47,32 +47,27 @@ async def preview_upgrade(
         raise HTTPException(status_code=409, detail="Домены недоступны")
 
     spent = sum(int(item.domain.price) for item in items)
-    target_value = max(1, int(round(spent * UPGRADE_SECTORS[payload.chance_sector])))
-    target_rarity = rarity_for_price(target_value)
-    max_row = (
-        await db.execute(
-            select(func.max(Domain.price)).where(
-                Domain.is_available.is_(True), Domain.rarity == target_rarity
-            )
-        )
-    ).scalar_one_or_none()
-    if target_rarity == "mythic" and target_value > int(max_row or 0):
+    theoretical_value = max(1, int(round(spent * UPGRADE_SECTORS[payload.chance_sector])))
+    target_rarity = rarity_for_price(theoretical_value)
+    domain = await db.scalar(
+        select(Domain)
+        .where(Domain.is_available.is_(True), Domain.rarity == target_rarity)
+        .order_by(func.abs(Domain.price - theoretical_value))
+        .limit(1)
+    )
+    if domain is None:
+        target_rarity = "mythic"
         domain = await db.scalar(
             select(Domain)
             .where(Domain.is_available.is_(True), Domain.rarity == "mythic")
-            .order_by(Domain.price.desc())
-            .limit(1)
-        )
-    else:
-        domain = await db.scalar(
-            select(Domain)
-            .where(Domain.is_available.is_(True), Domain.rarity == target_rarity)
-            .order_by(func.abs(Domain.price - target_value))
+            .order_by(func.abs(Domain.price - theoretical_value))
             .limit(1)
         )
     return UpgradePreviewOut(
-        target_value=target_value,
-        target_rarity=target_rarity,
+        # The preview and the real drop use one and the same price: no gap
+        # between "Цель" and "Может выпасть".
+        target_value=int(domain.price) if domain else theoretical_value,
+        target_rarity=domain.rarity if domain else target_rarity,
         domain=DomainOut.model_validate(domain) if domain else None,
     )
 
@@ -132,46 +127,36 @@ async def upgrade_domains(
         item.sold_at = now
         item.sold_price = 0
 
-    target_value = max(1, int(round(spent_value * multiplier)))
-    target_rarity = rarity_for_price(target_value)
+    theoretical_value = max(1, int(round(spent_value * multiplier)))
+    target_rarity = rarity_for_price(theoretical_value)
+    target_value = theoretical_value
     won_domain: Domain | None = None
 
     if success:
-        max_row = (
-            await db.execute(
-                select(func.max(Domain.price)).where(
-                    Domain.is_available.is_(True), Domain.rarity == target_rarity
-                )
+        won_domain = await db.scalar(
+            select(Domain)
+            .where(
+                Domain.is_available.is_(True),
+                Domain.rarity == target_rarity,
             )
-        ).scalar_one_or_none()
-        max_price = int(max_row or 0)
-
-        if target_rarity == "mythic" and target_value > max_price:
+            .order_by(func.abs(Domain.price - theoretical_value))
+            .limit(1)
+        )
+        if won_domain is None:
+            target_rarity = "mythic"
             won_domain = await db.scalar(
                 select(Domain)
                 .where(Domain.is_available.is_(True), Domain.rarity == "mythic")
-                .order_by(Domain.price.desc())
+                .order_by(func.abs(Domain.price - theoretical_value))
                 .limit(1)
             )
-        else:
-            won_domain = await db.scalar(
-                select(Domain)
-                .where(
-                    Domain.is_available.is_(True),
-                    Domain.rarity == target_rarity,
-                )
-                .order_by(func.abs(Domain.price - target_value))
-                .limit(1)
-            )
-            if won_domain is None:
-                won_domain = await db.scalar(
-                    select(Domain)
-                    .where(Domain.is_available.is_(True), Domain.rarity == "mythic")
-                    .order_by(Domain.price.desc())
-                    .limit(1)
-                )
         if won_domain is None:
             raise HTTPException(status_code=503, detail="Подходящих реальных доменов нет")
+
+        # Report the actual chosen price as the target, so preview/result and
+        # the real reward never show a gap.
+        target_value = int(won_domain.price)
+        target_rarity = won_domain.rarity
 
         db.add(
             Inventory(

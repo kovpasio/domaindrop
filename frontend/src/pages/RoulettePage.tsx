@@ -291,6 +291,9 @@ export function RoulettePage() {
           <div className="mt-0.5 font-display text-sm font-semibold text-paper">
             {formatNumber(me.user.total_spins)}
           </div>
+          <div className="mt-1 text-[8px] font-semibold text-teal">
+            удача +{me.progress.total_luck.toFixed(1)}%
+          </div>
         </div>
       </div>
 

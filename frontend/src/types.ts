@@ -37,9 +37,22 @@ export interface MeStats {
   can_daily_bonus: boolean;
 }
 
+export interface LuckProgress {
+  level: number;
+  title: string;
+  total_spins: number;
+  next_level_spins: number | null;
+  spins_into_level: number;
+  spins_to_next: number | null;
+  level_luck: number;
+  inventory_luck: number;
+  total_luck: number;
+}
+
 export interface MeResponse {
   user: User;
   stats: MeStats;
+  progress: LuckProgress;
 }
 
 export interface EarnResult {

@@ -44,7 +44,16 @@ export function ProfilePage() {
   }, []);
 
   if (!me) return null;
-  const { user, stats } = me;
+  const { user, stats, progress } = me;
+  const currentLevelStart = progress.total_spins - progress.spins_into_level;
+  const levelSpan =
+    progress.next_level_spins != null
+      ? Math.max(1, progress.next_level_spins - currentLevelStart)
+      : 1;
+  const levelRatio =
+    progress.next_level_spins != null
+      ? Math.min(100, (progress.spins_into_level / levelSpan) * 100)
+      : 100;
   const nextAvailable = stats.daily_available_at ? new Date(stats.daily_available_at).getTime() : 0;
   const dailyReady = nextAvailable <= now;
   const maxCount = Math.max(1, ...RARITY_ORDER.map((rarity) => stats.collection_by_rarity?.[rarity] ?? 0));
@@ -138,6 +147,63 @@ export function ProfilePage() {
             accent="#F2A54A"
           />
         </div>
+      </section>
+
+      <section className="rounded-2xl border border-teal/20 bg-gradient-to-br from-teal/[0.08] via-ink-800 to-accent/[0.05] p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-1.5 text-[8px] font-bold uppercase tracking-[0.16em] text-teal">
+              <Sparkles size={11} /> пилотский уровень
+            </div>
+            <div className="mt-1 font-display text-lg font-semibold text-paper">
+              {progress.level} · {progress.title}
+            </div>
+          </div>
+          <div className="rounded-lg border border-teal/25 bg-teal/10 px-2.5 py-1.5 text-right">
+            <div className="text-[7px] uppercase tracking-[0.1em] text-muted/60">удача</div>
+            <div className="font-display text-[13px] font-semibold text-teal">
+              +{progress.total_luck.toFixed(1)}%
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-teal to-accent transition-all duration-500"
+            style={{ width: `${levelRatio}%` }}
+          />
+        </div>
+        <div className="mt-1.5 flex items-center justify-between text-[8px] text-muted/70">
+          <span>
+            {progress.next_level_spins != null
+              ? `${formatNumber(progress.spins_into_level)} / ${formatNumber(levelSpan)} спинов`
+              : 'максимальный уровень'}
+          </span>
+          <span>
+            {progress.next_level_spins != null
+              ? `до следующего: ${formatNumber(progress.spins_to_next ?? 0)}`
+              : 'все бонусы открыты'}
+          </span>
+        </div>
+
+        <div className="mt-3 grid grid-cols-2 gap-2 border-t border-white/[0.06] pt-3">
+          <div>
+            <div className="text-[7px] uppercase tracking-[0.1em] text-muted/60">за спины</div>
+            <div className="mt-0.5 font-display text-[11px] font-semibold text-paper">
+              +{progress.level_luck.toFixed(1)}% удачи
+            </div>
+          </div>
+          <div>
+            <div className="text-[7px] uppercase tracking-[0.1em] text-muted/60">за инвентарь</div>
+            <div className="mt-0.5 font-display text-[11px] font-semibold text-paper">
+              +{progress.inventory_luck.toFixed(1)}% удачи
+            </div>
+          </div>
+        </div>
+        <p className="mt-2 text-[8px] leading-relaxed text-muted/50">
+          Удача сдвигает шансы в сторону Rare+. Домены в инвентаре усиливают бонус, пока вы их не
+          продали.
+        </p>
       </section>
 
       <button

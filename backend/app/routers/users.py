@@ -9,8 +9,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.database import get_db
 from app.models import User
-from app.schemas import DailyBonusOut, MeOut, MeStats, UserOut
+from app.schemas import DailyBonusOut, LuckProgressOut, MeOut, MeStats, UserOut
 from app.security import get_current_user
+from app.services.luck import luck_profile
 from app.services.stats import (
     collection_breakdown,
     collection_stats,
@@ -41,8 +42,20 @@ async def build_me(db: AsyncSession, user: User) -> MeOut:
         else None
     )
     can_daily = next_bonus is None or now >= next_bonus
+    progress = luck_profile(user.total_spins, by_rarity)
     return MeOut(
         user=UserOut.model_validate(user),
+        progress=LuckProgressOut(
+            level=progress.level,
+            title=progress.title,
+            total_spins=progress.total_spins,
+            next_level_spins=progress.next_level_spins,
+            spins_into_level=progress.spins_into_level,
+            spins_to_next=progress.spins_to_next,
+            level_luck=progress.level_luck,
+            inventory_luck=progress.inventory_luck,
+            total_luck=progress.total_luck,
+        ),
         stats=MeStats(
             collection_count=collection_count,
             collection_value=collection_value,

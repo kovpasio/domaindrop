@@ -99,7 +99,9 @@ export function UpgraderPage() {
     [items, selectedIds],
   );
   const sum = selectedItems.reduce((total, item) => total + item.domain.price, 0);
-  const target = Math.round(sum * sector.multiplier);
+  // Use the exact domain chosen for the preview. The raw multiplier target is
+  // only a fallback while the preview request is in flight.
+  const target = preview?.target_value ?? Math.round(sum * sector.multiplier);
 
   useEffect(() => {
     if (!selectedItems.length) {
