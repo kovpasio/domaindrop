@@ -199,6 +199,9 @@ function PodiumCard({
         {entry.display_name}
       </div>
       <div className="w-full truncate text-[8px] text-white/30">@{entry.username}</div>
+      <div className="mt-1 rounded border border-teal/25 bg-teal/10 px-1.5 py-0.5 text-[7px] font-bold uppercase tracking-[0.08em] text-teal">
+        lvl {entry.level}
+      </div>
       <div className="mt-2 flex items-center gap-1">
         <span className={cn('font-display font-bold', place === 0 ? 'text-base text-[#F2A54A]' : 'text-[12px] text-white/70')}>
           {formatNumber(entry.score)}
@@ -247,7 +250,7 @@ function RankRow({ entry, highlight = false }: { entry: LeaderboardEntry; highli
           )}
         </div>
         <div className="truncate text-[8px] text-white/25">
-          @{entry.username} · {entry.domains_count} доменов
+          @{entry.username} · LVL {entry.level} · {entry.domains_count} доменов
         </div>
       </div>
       <div className="text-right">

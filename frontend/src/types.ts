@@ -202,6 +202,7 @@ export interface LeaderboardEntry {
   avatar_url: string | null;
   score: number;
   domains_count: number;
+  level: number;
   is_me: boolean;
 }
 

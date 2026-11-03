@@ -212,6 +212,7 @@ class LeaderboardEntry(BaseModel):
     avatar_url: str | None
     score: int
     domains_count: int
+    level: int
     is_me: bool = False
 
 

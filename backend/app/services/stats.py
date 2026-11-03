@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.economy import RARITY_ORDER
 from app.models import Domain, Inventory, User
 from app.schemas import LeaderboardEntry
+from app.services.luck import level_index
 
 
 def _scores_cte():
@@ -16,6 +17,7 @@ def _scores_cte():
             User.username.label("username"),
             User.display_name.label("display_name"),
             User.avatar_url.label("avatar_url"),
+            User.total_spins.label("total_spins"),
             func.coalesce(func.sum(Domain.price), 0).label("score"),
             func.count(Inventory.id).label("domains_count"),
         )
@@ -39,7 +41,15 @@ def _ranked_cte():
     scores = _scores_cte()
     return select(
         scores,
-        func.dense_rank().over(order_by=scores.c.score.desc()).label("rank"),
+        func.row_number()
+        .over(
+            order_by=(
+                scores.c.score.desc(),
+                func.lower(func.coalesce(scores.c.username, scores.c.display_name, "")).asc(),
+                scores.c.user_id.asc(),
+            )
+        )
+        .label("rank"),
     ).cte("ranked_collections")
 
 
@@ -52,6 +62,7 @@ def _row_to_entry(row, me_id: int | None = None) -> LeaderboardEntry:
         avatar_url=row.avatar_url,
         score=int(row.score),
         domains_count=int(row.domains_count),
+        level=level_index(int(row.total_spins or 0)) + 1,
         is_me=me_id is not None and int(row.user_id) == me_id,
     )
 

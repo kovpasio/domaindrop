@@ -13,7 +13,7 @@ export function TopBar() {
   return (
     <header className="sticky top-0 z-40">
       <div className="border-b border-white/[0.06] bg-ink-950/85 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
-        <div className="mx-auto flex h-[62px] w-full max-w-md items-center justify-between px-4">
+        <div className="mx-auto flex h-[56px] w-full max-w-md items-center justify-between px-4">
           <Logo />
           <div className="flex items-center gap-2">
             <button

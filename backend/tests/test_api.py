@@ -2,17 +2,20 @@ from __future__ import annotations
 
 import copy
 from collections.abc import AsyncGenerator
+from datetime import datetime, timezone
 
 import fakeredis.aioredis
 import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
 from app.database import get_db
 from app.economy import weight_for
-from app.models import Base, Domain
+from app.models import Base, Domain, Inventory, User
+from app.services.stats import leaderboard as get_leaderboard
 from app.routers import (
     admin,
     auth,
@@ -298,6 +301,41 @@ async def test_full_game_flow(test_context, monkeypatch):
     me_after = await client.get("/api/me", headers=headers)
     assert me_after.status_code == 200
     assert me_after.json()["stats"]["collection_by_rarity"]
+
+
+async def test_leaderboard_ranks_are_unique_and_ties_use_username(test_context):
+    _client, Session, _fake = test_context
+    async with Session() as session:
+        alpha = User(
+            telegram_id=910001,
+            username="alpha",
+            display_name="Alpha",
+            total_spins=25,
+        )
+        zeta = User(
+            telegram_id=910002,
+            username="zeta",
+            display_name="Zeta",
+            total_spins=180,
+        )
+        session.add_all([alpha, zeta])
+        await session.flush()
+        domain = await session.scalar(select(Domain).limit(1))
+        assert domain is not None
+        now = datetime.now(timezone.utc)
+        session.add_all(
+            [
+                Inventory(user_id=alpha.id, domain_id=domain.id, acquired_at=now),
+                Inventory(user_id=zeta.id, domain_id=domain.id, acquired_at=now),
+            ]
+        )
+        await session.commit()
+
+        entries, _me, _players = await get_leaderboard(session, zeta.id)
+        assert [entry.rank for entry in entries[:2]] == [1, 2]
+        assert [entry.username for entry in entries[:2]] == ["alpha", "zeta"]
+        assert entries[0].level == 2
+        assert entries[1].level == 5
 
 
 async def test_auth_rejects_bad_init_data(test_context):

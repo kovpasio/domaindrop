@@ -242,13 +242,17 @@ export function UpgraderPage() {
               <ChanceWheel
                 percent={quotedChance}
                 chanceRange={chanceRange}
-                color={SECTOR_COLORS[sectorIndex % SECTOR_COLORS.length]}
+                color={
+                  customChance !== null
+                    ? '#F2A54A'
+                    : SECTOR_COLORS[sectorIndex % SECTOR_COLORS.length]
+                }
                 arrowAngle={arrowAngle}
                 moving={arrowMoving}
               />
             </div>
 
-            <div className="mt-3 grid grid-cols-4 gap-1.5">
+            <div className="mt-3 grid grid-cols-5 gap-1.5">
               {sectors.map((item, index) => {
                 const active = customChance === null && index === sectorIndex;
                 return (
@@ -283,36 +287,62 @@ export function UpgraderPage() {
                   </button>
                 );
               })}
+              <button
+                type="button"
+                disabled={forging}
+                onClick={() => {
+                  setCustomChance(50);
+                  setQuotedChance(50);
+                  hapticImpact('light');
+                }}
+                className={cn(
+                  'rounded-lg border px-0.5 py-2 text-center transition',
+                  customChance !== null
+                    ? 'border-gold/70 bg-gold/15'
+                    : 'border-white/[0.06] bg-white/[0.025] hover:border-white/[0.14]',
+                )}
+              >
+                <div
+                  className={cn(
+                    'py-0.5 font-display text-[10px] font-bold',
+                    customChance !== null ? 'text-gold' : 'text-muted',
+                  )}
+                >
+                  свой
+                </div>
+              </button>
             </div>
 
-            <div className="mt-3 rounded-xl border border-white/[0.07] bg-ink-900/70 p-3">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted/60">
-                  свой шанс
-                </span>
-                <span className="font-display text-[12px] font-semibold text-gold">
-                  {customChance !== null ? `${customChance}%` : 'авто'}
-                </span>
+            {customChance !== null && (
+              <div className="mt-3 rounded-xl border border-gold/25 bg-ink-900/70 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted/60">
+                    свой шанс
+                  </span>
+                  <span className="font-display text-[12px] font-semibold text-gold">
+                    {customChance}%
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={1}
+                  max={75}
+                  step={1}
+                  value={customChance}
+                  disabled={forging}
+                  onChange={(event) => {
+                    const value = Number(event.target.value);
+                    setCustomChance(value);
+                    setQuotedChance(value);
+                  }}
+                  className="mt-2 h-1.5 w-full cursor-pointer accent-[#F2A54A]"
+                />
+                <div className="mt-1 flex justify-between text-[7px] text-muted/50">
+                  <span>1%</span>
+                  <span>75%</span>
+                </div>
               </div>
-              <input
-                type="range"
-                min={1}
-                max={75}
-                step={1}
-                value={customChance ?? Math.round(quotedChance)}
-                disabled={forging}
-                onChange={(event) => {
-                  const value = Number(event.target.value);
-                  setCustomChance(value);
-                  setQuotedChance(value);
-                }}
-                className="mt-2 h-1.5 w-full cursor-pointer accent-[#F2A54A]"
-              />
-              <div className="mt-1 flex justify-between text-[7px] text-muted/50">
-                <span>1%</span>
-                <span>75%</span>
-              </div>
-            </div>
+            )}
 
             <div className="mt-3 grid grid-cols-3 gap-2 rounded-xl border border-white/[0.07] bg-ink-900/70 p-3">
               <ForgeStat label="Сумма" value={`${formatNumber(sum)} D`} />
