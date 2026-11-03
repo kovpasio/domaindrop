@@ -129,6 +129,13 @@ export interface SpinResult {
   created_at: string;
 }
 
+export interface SpinBatchResult {
+  items: SpinResult[];
+  times: number;
+  total_cost: number;
+  balance: number;
+}
+
 export interface KeepResult {
   spin_id: number;
   domain: Domain;

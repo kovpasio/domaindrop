@@ -18,6 +18,7 @@ import type {
   Rarity,
   RollType,
   SellResult,
+  SpinBatchResult,
   SpinResult,
   UpgradePreview,
   UpgradeResult,
@@ -144,7 +145,7 @@ export const api = {
     request<Domain[]>(`/domains/feed?roll_type=${encodeURIComponent(rollType)}&limit=${limit}`),
 
   spin: (rollType: RollType, times: 1 | 3 = 1) =>
-    request<SpinResult>('/spin', {
+    request<SpinResult | SpinBatchResult>('/spin', {
       method: 'POST',
       body: JSON.stringify({ roll_type: rollType, times }),
     }),

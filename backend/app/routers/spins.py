@@ -12,9 +12,9 @@ from sqlalchemy.orm import noload
 
 from app.config import settings
 from app.database import get_db
-from app.economy import RARITY_ORDER, SPIN_TYPES
+from app.economy import SPIN_TYPES
 from app.models import Domain, Inventory, Spin, User
-from app.schemas import DomainOut, KeepSpinOut, SpinIn, SpinOut
+from app.schemas import DomainOut, KeepSpinOut, SpinBatchOut, SpinIn, SpinOut
 from app.security import get_current_user
 from app.services.autosell import get_or_create_settings, should_autosell
 from app.services.realtime import publish_drop
@@ -64,12 +64,12 @@ async def _release_cooldown(user_id: int) -> None:
         logger.warning("Could not release spin cooldown for %s", user_id)
 
 
-@router.post("", response_model=SpinOut)
+@router.post("", response_model=SpinOut | SpinBatchOut)
 async def spin(
     payload: SpinIn,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> SpinOut:
+) -> SpinOut | SpinBatchOut:
     roll = SPIN_TYPES[payload.roll_type]
     times = payload.times
     total_cost = roll["cost"] * times
@@ -95,84 +95,99 @@ async def spin(
         inventory_counts = await collection_breakdown(db, locked_user.id)
         progress = luck_profile(locked_user.total_spins, inventory_counts)
         chances = apply_luck(roll["rarity_chances"], progress.total_luck)
-        domain: Domain | None = None
+        autosell = await get_or_create_settings(db, locked_user.id)
+
+        created: list[tuple[Spin, Domain, Inventory | None, bool, int]] = []
+        seen_domains: set[int] = set()
         for _ in range(times):
             rarity = choose_rarity(roll, chances)
-            candidate = await random_domain_in_rarity(db, rarity)
-            if candidate is None:
+            domain = None
+            for _attempt in range(20):
+                candidate = await random_domain_in_rarity(db, rarity)
+                if candidate is None:
+                    break
+                if candidate.id not in seen_domains or _attempt == 19:
+                    domain = candidate
+                    break
+            if domain is None:
                 raise HTTPException(status_code=503, detail="Пул доменов пуст")
-            if domain is None or (
-                RARITY_ORDER.index(candidate.rarity),
-                int(candidate.price),
-            ) > (
-                RARITY_ORDER.index(domain.rarity),
-                int(domain.price),
-            ):
-                domain = candidate
+            seen_domains.add(domain.id)
 
-        autosell = await get_or_create_settings(db, locked_user.id)
-        price = int(domain.price)
-        sale_price = price
-        auto_sold = should_autosell(autosell, domain.rarity, price)
-        locked_user.balance -= total_cost
-        if auto_sold:
-            locked_user.balance += sale_price
-        locked_user.total_spins += times
+            price = int(domain.price)
+            sale_price = price
+            auto_sold = should_autosell(autosell, domain.rarity, price)
+            locked_user.balance -= roll["cost"]
+            if auto_sold:
+                locked_user.balance += sale_price
+            locked_user.total_spins += 1
 
-        server_seed = secrets.token_hex(32)
-        nonce = locked_user.total_spins
-        spin_row = Spin(
-            commitment_id=None,
-            user_id=locked_user.id,
-            domain_id=domain.id,
-            roll_type=payload.roll_type,
-            rarity=domain.rarity,
-            base_rarity=domain.rarity,
-            server_seed=server_seed,
-            server_seed_hash=hashlib.sha256(server_seed.encode()).hexdigest(),
-            client_seed=secrets.token_hex(8),
-            nonce=nonce,
-            rarity_roll=0,
-            domain_roll=0,
-            domain_index=0,
-            bucket_size=0,
-            pity_applied=False,
-            price=price,
-            auto_sold=auto_sold,
-            auto_sold_price=sale_price if auto_sold else None,
-            created_at=now,
-        )
-        db.add(spin_row)
-        await db.flush()
-
-        inventory_row: Inventory | None = None
-        if not auto_sold:
-            inventory_row = Inventory(
+            server_seed = secrets.token_hex(32)
+            spin_row = Spin(
+                commitment_id=None,
                 user_id=locked_user.id,
                 domain_id=domain.id,
-                acquired_at=now,
+                roll_type=payload.roll_type,
+                rarity=domain.rarity,
+                base_rarity=domain.rarity,
+                server_seed=server_seed,
+                server_seed_hash=hashlib.sha256(server_seed.encode()).hexdigest(),
+                client_seed=secrets.token_hex(8),
+                nonce=locked_user.total_spins,
+                rarity_roll=0,
+                domain_roll=0,
+                domain_index=0,
+                bucket_size=0,
+                pity_applied=False,
+                price=price,
+                auto_sold=auto_sold,
+                auto_sold_price=sale_price if auto_sold else None,
+                created_at=now,
             )
-            db.add(inventory_row)
+            db.add(spin_row)
             await db.flush()
 
-        await db.commit()
-        await db.refresh(spin_row)
-        spin_row.user = locked_user
-        spin_row.domain = domain
-        await publish_drop(spin_row)
+            inventory_row: Inventory | None = None
+            if not auto_sold:
+                inventory_row = Inventory(
+                    user_id=locked_user.id,
+                    domain_id=domain.id,
+                    acquired_at=now,
+                )
+                db.add(inventory_row)
+                await db.flush()
 
-        return SpinOut(
-            id=spin_row.id,
-            roll_type=payload.roll_type,
+            created.append((spin_row, domain, inventory_row, auto_sold, sale_price))
+
+        await db.commit()
+
+        items: list[SpinOut] = []
+        for spin_row, domain, inventory_row, auto_sold, sale_price in created:
+            spin_row.user = locked_user
+            spin_row.domain = domain
+            await publish_drop(spin_row)
+            items.append(
+                SpinOut(
+                    id=spin_row.id,
+                    roll_type=payload.roll_type,
+                    times=1,
+                    domain=DomainOut.model_validate(domain),
+                    rarity=domain.rarity,
+                    price=int(domain.price),
+                    balance=locked_user.balance,
+                    auto_sold=auto_sold,
+                    auto_sold_price=sale_price if auto_sold else None,
+                    inventory_id=inventory_row.id if inventory_row is not None else None,
+                    created_at=spin_row.created_at,
+                )
+            )
+
+        if times == 1:
+            return items[0]
+        return SpinBatchOut(
+            items=items,
             times=times,
-            domain=DomainOut.model_validate(domain),
-            rarity=domain.rarity,
-            price=price,
+            total_cost=total_cost,
             balance=locked_user.balance,
-            auto_sold=auto_sold,
-            auto_sold_price=sale_price if auto_sold else None,
-            inventory_id=inventory_row.id if inventory_row is not None else None,
-            created_at=spin_row.created_at,
         )
     except HTTPException:
         await db.rollback()

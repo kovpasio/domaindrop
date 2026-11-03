@@ -338,13 +338,15 @@ async def test_triple_spin_and_custom_upgrade_chance(test_context):
     data = triple.json()
     assert data["times"] == 3
     assert data["balance"] == 1700
-    assert data["inventory_id"] is not None
+    assert data["total_cost"] == 300
+    assert len(data["items"]) == 3
+    assert all(item["inventory_id"] is not None for item in data["items"])
 
     preview = await client.post(
         "/api/upgrade/preview",
         headers=headers,
         json={
-            "domain_ids": [data["inventory_id"]],
+            "domain_ids": [data["items"][0]["inventory_id"]],
             "chance_sector": 50,
             "chance": 37,
         },

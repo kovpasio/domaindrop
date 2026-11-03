@@ -112,6 +112,13 @@ class SpinOut(BaseModel):
     created_at: datetime
 
 
+class SpinBatchOut(BaseModel):
+    items: list[SpinOut]
+    times: int
+    total_cost: int
+    balance: int
+
+
 class KeepSpinOut(BaseModel):
     spin_id: int
     domain: DomainOut

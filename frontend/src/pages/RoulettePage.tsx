@@ -65,6 +65,11 @@ export function RoulettePage() {
   const [revealed, setRevealed] = useState(false);
   const [loadingFeed, setLoadingFeed] = useState(true);
   const [triple, setTriple] = useState(false);
+  const [batchResults, setBatchResults] = useState<SpinResult[] | null>(null);
+  const [batchSold, setBatchSold] = useState<Record<number, number>>({});
+  const [batchBusyId, setBatchBusyId] = useState<number | null>(null);
+  const [ribbons, setRibbons] = useState<Domain[][]>([]);
+  const [tripleTargets, setTripleTargets] = useState<number[]>([]);
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const tickTimers = useRef<number[]>([]);
@@ -123,6 +128,7 @@ export function RoulettePage() {
   useEffect(() => {
     if (!meta) return;
     setResult(null);
+    setBatchResults(null);
     setRevealed(false);
     void loadFeed(activeType);
   }, [activeType, meta, loadFeed]);
@@ -164,6 +170,37 @@ export function RoulettePage() {
       void refresh().catch(() => undefined);
     },
     [applyBalance, clearFinishTimer, playReveal, refresh, toast],
+  );
+
+  const finishBatch = useCallback(
+    (items: SpinResult[]) => {
+      if (!lock.current) return;
+      lock.current = false;
+      clearFinishTimer();
+      setSpinning(false);
+      setRevealed(true);
+      setResult(null);
+      setBatchResults(items);
+      setBatchSold({});
+      const best = items.reduce((winner, item) =>
+        RARITY_ORDER.indexOf(item.rarity) > RARITY_ORDER.indexOf(winner.rarity) ||
+        (item.rarity === winner.rarity && item.price > winner.price)
+          ? item
+          : winner,
+      );
+      if (items.some((item) => item.rarity === 'mythic')) {
+        setMythicDrop(items.find((item) => item.rarity === 'mythic')?.domain ?? null);
+      }
+      applyBalance(items[items.length - 1]?.balance ?? 0);
+      playReveal(best.rarity);
+      hapticNotify(
+        items.some((item) => item.rarity === 'mythic' || item.rarity === 'legendary')
+          ? 'success'
+          : 'warning',
+      );
+      void refresh().catch(() => undefined);
+    },
+    [applyBalance, clearFinishTimer, playReveal, refresh],
   );
 
   async function keepAutoSold() {
@@ -213,6 +250,54 @@ export function RoulettePage() {
     }
   }
 
+  async function sellBatchItem(item: SpinResult) {
+    if (!item.inventory_id || item.auto_sold || batchBusyId !== null || batchSold[item.id]) return;
+    setBatchBusyId(item.id);
+    try {
+      const sold = await api.sell(item.inventory_id);
+      applyBalance(sold.balance);
+      setBatchSold((current) => ({ ...current, [item.id]: sold.sold_price }));
+      playCoin();
+      hapticNotify('success');
+      toast(`Продано: +${formatNumber(sold.sold_price)} D`, 'success');
+      void refresh().catch(() => undefined);
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Не удалось продать домен', 'error');
+    } finally {
+      setBatchBusyId(null);
+    }
+  }
+
+  async function keepBatchItem(item: SpinResult) {
+    if (!item.auto_sold || batchBusyId !== null) return;
+    setBatchBusyId(item.id);
+    try {
+      const kept = await api.keepSpin(item.id);
+      applyBalance(kept.balance);
+      setBatchResults((current) =>
+        current
+          ? current.map((entry) =>
+              entry.id === item.id
+                ? {
+                    ...entry,
+                    auto_sold: false,
+                    auto_sold_price: null,
+                    inventory_id: kept.inventory_id,
+                  }
+                : entry,
+            )
+          : current,
+      );
+      hapticNotify('success');
+      toast('Домен оставлен в инвентаре', 'success');
+      void refresh().catch(() => undefined);
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Не удалось оставить домен', 'error');
+    } finally {
+      setBatchBusyId(null);
+    }
+  }
+
   async function spin() {
     if (!activeRoll || spinning || lock.current) return;
     const times = triple ? 3 : 1;
@@ -227,6 +312,8 @@ export function RoulettePage() {
     setSpinning(true);
     setRevealed(false);
     setResult(null);
+    setBatchResults(null);
+    setBatchSold({});
     setQuickSoldPrice(null);
     setSelling(false);
     setKeeping(false);
@@ -242,25 +329,47 @@ export function RoulettePage() {
       if (freshFeed.length) {
         setFeed(freshFeed);
       }
-      const pool = (freshFeed.length ? freshFeed : feed.length ? feed : [response.domain]).filter(
-        (domain) => domain.id !== response.domain.id,
-      );
-      const nextRibbon = fillRibbon(pool.length ? pool : [response.domain]);
-      nextRibbon[TARGET_INDEX] = response.domain;
-
-      const width = viewportRef.current?.offsetWidth ?? 360;
+      const source = freshFeed.length ? freshFeed : feed;
+      const width = viewportRef.current?.offsetWidth ?? Math.min(window.innerWidth - 48, 420);
       const target = width / 2 - (TARGET_INDEX * ITEM_STEP + ITEM_WIDTH / 2);
 
-      setResult(response);
-      setRibbon(nextRibbon);
-      setAnimateTarget(target);
-      setRibbonId((value) => value + 1);
-      scheduleTicks();
-      clearFinishTimer();
-      finishTimer.current = window.setTimeout(
-        () => finishSpin(response),
-        SPIN_DURATION * 1000 + 140,
-      );
+      if ('items' in response) {
+        const nextRibbons = response.items.map((item) => {
+          const pool = (source.length ? source : [item.domain]).filter(
+            (domain) => domain.id !== item.domain.id,
+          );
+          const next = fillRibbon(pool.length ? pool : [item.domain]);
+          next[TARGET_INDEX] = item.domain;
+          return next;
+        });
+        setResult(null);
+        setRibbons(nextRibbons);
+        setTripleTargets(response.items.map(() => target));
+        setRibbonId((value) => value + 1);
+        scheduleTicks();
+        clearFinishTimer();
+        finishTimer.current = window.setTimeout(
+          () => finishBatch(response.items),
+          SPIN_DURATION * 1000 + 140,
+        );
+      } else {
+        const pool = (source.length ? source : [response.domain]).filter(
+          (domain) => domain.id !== response.domain.id,
+        );
+        const nextRibbon = fillRibbon(pool.length ? pool : [response.domain]);
+        nextRibbon[TARGET_INDEX] = response.domain;
+        setResult(response);
+        setRibbons([]);
+        setRibbon(nextRibbon);
+        setAnimateTarget(target);
+        setRibbonId((value) => value + 1);
+        scheduleTicks();
+        clearFinishTimer();
+        finishTimer.current = window.setTimeout(
+          () => finishSpin(response),
+          SPIN_DURATION * 1000 + 140,
+        );
+      }
     } catch (error) {
       lock.current = false;
       incrementBalance(cost);
@@ -349,46 +458,97 @@ export function RoulettePage() {
           </div>
         </div>
 
-        <div
-          ref={viewportRef}
-          className="roulette-fade relative h-[156px] overflow-hidden rounded-xl border border-white/[0.05] bg-ink-900"
-        >
-          <div className="absolute inset-x-0 top-0 z-10 flex h-3 items-end justify-between px-3 opacity-20">
-            {Array.from({ length: 26 }).map((_, index) => (
-              <span key={index} className={cn('w-px bg-paper', index % 4 === 0 ? 'h-1.5' : 'h-1')} />
-            ))}
+        {triple ? (
+          <div className="space-y-1.5">
+            {[0, 1, 2].map((index) => {
+              const strip = ribbons[index]?.length ? ribbons[index] : fillRibbon(feed);
+              return (
+                <div
+                  key={`triple-${index}`}
+                  className="roulette-fade relative h-[132px] overflow-hidden rounded-xl border border-white/[0.05] bg-ink-900"
+                >
+                  <div className="pointer-events-none absolute left-2 top-2 z-20 flex h-5 w-5 items-center justify-center rounded-full border border-white/10 bg-ink-950/70 text-[8px] font-bold text-muted">
+                    {index + 1}
+                  </div>
+                  <div className="absolute inset-x-0 top-0 z-10 flex h-3 items-end justify-between px-3 opacity-20">
+                    {Array.from({ length: 26 }).map((_, tick) => (
+                      <span key={tick} className={cn('w-px bg-paper', tick % 4 === 0 ? 'h-1.5' : 'h-1')} />
+                    ))}
+                  </div>
+                  <div className="absolute inset-x-0 bottom-0 z-10 flex h-3 items-start justify-between px-3 opacity-20">
+                    {Array.from({ length: 26 }).map((_, tick) => (
+                      <span key={tick} className={cn('w-px bg-paper', tick % 4 === 0 ? 'h-1.5' : 'h-1')} />
+                    ))}
+                  </div>
+                  <div className="absolute inset-0 flex items-center">
+                    <motion.div
+                      key={`${ribbonId}-${index}`}
+                      initial={{ x: 0 }}
+                      animate={{ x: tripleTargets[index] ?? 0 }}
+                      transition={{ duration: SPIN_DURATION, ease: [0.12, 0.72, 0.12, 1] }}
+                      className="flex w-max gap-[9px] will-change-transform"
+                    >
+                      {strip.map((domain, itemIndex) => (
+                        <RibbonCard
+                          key={`${ribbonId}-${index}-${itemIndex}-${domain.id}`}
+                          domain={domain}
+                          highlighted={revealed && itemIndex === TARGET_INDEX}
+                        />
+                      ))}
+                    </motion.div>
+                  </div>
+                  <div className="roulette-vignette pointer-events-none absolute inset-0" />
+                  <div className="pointer-events-none absolute inset-y-0 left-1/2 z-20 -translate-x-1/2">
+                    <div className="h-full w-px bg-accent-soft/80" />
+                    <div className="absolute -top-0.5 left-1/2 h-0 w-0 -translate-x-1/2 border-x-[4px] border-t-[6px] border-x-transparent border-t-accent-soft" />
+                    <div className="absolute -bottom-0.5 left-1/2 h-0 w-0 -translate-x-1/2 border-x-[4px] border-b-[6px] border-x-transparent border-b-accent-soft" />
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          <div className="absolute inset-x-0 bottom-0 z-10 flex h-3 items-start justify-between px-3 opacity-20">
-            {Array.from({ length: 26 }).map((_, index) => (
-              <span key={index} className={cn('w-px bg-paper', index % 4 === 0 ? 'h-1.5' : 'h-1')} />
-            ))}
-          </div>
-
-          <div className="absolute inset-0 flex items-center">
-            <motion.div
-              key={ribbonId}
-              initial={{ x: 0 }}
-              animate={{ x: animateTarget }}
-              transition={{ duration: SPIN_DURATION, ease: [0.12, 0.72, 0.12, 1] }}
-              className="flex w-max gap-[9px] will-change-transform"
-            >
-              {ribbon.map((domain, index) => (
-                <RibbonCard
-                  key={`${ribbonId}-${index}-${domain.id}`}
-                  domain={domain}
-                  highlighted={revealed && index === TARGET_INDEX}
-                />
+        ) : (
+          <div
+            ref={viewportRef}
+            className="roulette-fade relative h-[156px] overflow-hidden rounded-xl border border-white/[0.05] bg-ink-900"
+          >
+            <div className="absolute inset-x-0 top-0 z-10 flex h-3 items-end justify-between px-3 opacity-20">
+              {Array.from({ length: 26 }).map((_, index) => (
+                <span key={index} className={cn('w-px bg-paper', index % 4 === 0 ? 'h-1.5' : 'h-1')} />
               ))}
-            </motion.div>
-          </div>
+            </div>
+            <div className="absolute inset-x-0 bottom-0 z-10 flex h-3 items-start justify-between px-3 opacity-20">
+              {Array.from({ length: 26 }).map((_, index) => (
+                <span key={index} className={cn('w-px bg-paper', index % 4 === 0 ? 'h-1.5' : 'h-1')} />
+              ))}
+            </div>
 
-          <div className="roulette-vignette pointer-events-none absolute inset-0" />
-          <div className="pointer-events-none absolute inset-y-0 left-1/2 z-20 -translate-x-1/2">
-            <div className="h-full w-px bg-accent-soft/80" />
-            <div className="absolute -top-0.5 left-1/2 h-0 w-0 -translate-x-1/2 border-x-[4px] border-t-[6px] border-x-transparent border-t-accent-soft" />
-            <div className="absolute -bottom-0.5 left-1/2 h-0 w-0 -translate-x-1/2 border-x-[4px] border-b-[6px] border-x-transparent border-b-accent-soft" />
+            <div className="absolute inset-0 flex items-center">
+              <motion.div
+                key={ribbonId}
+                initial={{ x: 0 }}
+                animate={{ x: animateTarget }}
+                transition={{ duration: SPIN_DURATION, ease: [0.12, 0.72, 0.12, 1] }}
+                className="flex w-max gap-[9px] will-change-transform"
+              >
+                {ribbon.map((domain, index) => (
+                  <RibbonCard
+                    key={`${ribbonId}-${index}-${domain.id}`}
+                    domain={domain}
+                    highlighted={revealed && index === TARGET_INDEX}
+                  />
+                ))}
+              </motion.div>
+            </div>
+
+            <div className="roulette-vignette pointer-events-none absolute inset-0" />
+            <div className="pointer-events-none absolute inset-y-0 left-1/2 z-20 -translate-x-1/2">
+              <div className="h-full w-px bg-accent-soft/80" />
+              <div className="absolute -top-0.5 left-1/2 h-0 w-0 -translate-x-1/2 border-x-[4px] border-t-[6px] border-x-transparent border-t-accent-soft" />
+              <div className="absolute -bottom-0.5 left-1/2 h-0 w-0 -translate-x-1/2 border-x-[4px] border-b-[6px] border-x-transparent border-b-accent-soft" />
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <div className="flex gap-1.5">
@@ -580,6 +740,107 @@ export function RoulettePage() {
             >
               <Package size={12} /> Открыть инвентарь <ArrowRight size={11} />
             </Link>
+          </motion.section>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {revealed && batchResults && (
+          <motion.section
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+            className="rounded-2xl border border-accent/25 bg-ink-800 p-4"
+          >
+            <div className="flex items-center justify-between">
+              <span className="label">Результат ×3</span>
+              <span className="text-[8px] text-muted/60">три независимых дропа</span>
+            </div>
+            <div className="mt-3 space-y-1.5">
+              {batchResults.map((item) => {
+                const soldPrice = batchSold[item.id];
+                const busy = batchBusyId === item.id;
+                return (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-ink-900/60 p-2"
+                    style={{ borderColor: `${RARITY[item.rarity].color}30` }}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <RarityBadge rarity={item.rarity} />
+                      <div className="mt-1 truncate font-display text-[12px] font-semibold text-paper">
+                        {item.domain.name}
+                        <span style={{ color: RARITY[item.rarity].color }}>{item.domain.zone}</span>
+                      </div>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <div className="font-display text-[11px] font-semibold text-gold">
+                        {formatNumber(soldPrice ?? (item.auto_sold ? (item.auto_sold_price ?? item.price) : item.price))} D
+                      </div>
+                      {soldPrice !== undefined ? (
+                        <span className="text-[7px] text-accent-soft">продано</span>
+                      ) : item.auto_sold ? (
+                        <span className="text-[7px] text-accent-soft">автопродано</span>
+                      ) : (
+                        <span className="text-[7px] text-muted/60">в инвентаре</span>
+                      )}
+                    </div>
+                    <div className="flex shrink-0 gap-1">
+                      {item.auto_sold ? (
+                        <button
+                          type="button"
+                          onClick={() => void keepBatchItem(item)}
+                          disabled={busy}
+                          className="rounded-lg border border-teal/25 bg-teal/10 px-2 py-1.5 text-[8px] font-semibold text-teal disabled:opacity-50"
+                        >
+                          {busy ? '…' : 'Оставить'}
+                        </button>
+                      ) : soldPrice === undefined ? (
+                        <button
+                          type="button"
+                          onClick={() => void sellBatchItem(item)}
+                          disabled={busy || !item.inventory_id}
+                          className="rounded-lg border border-gold/25 bg-gold/10 px-2 py-1.5 text-[8px] font-semibold text-gold disabled:opacity-50"
+                        >
+                          {busy ? '…' : 'Продать'}
+                        </button>
+                      ) : (
+                        <span className="rounded-lg border border-accent/20 bg-accent/10 px-2 py-1.5 text-[8px] text-accent-soft">
+                          готово
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-3 flex items-center justify-between border-t border-white/[0.06] pt-3">
+              <span className="text-[9px] text-muted">
+                Итого:{' '}
+                <b className="font-display text-paper">
+                  {formatNumber(
+                    batchResults.reduce(
+                      (total, item) =>
+                        total +
+                        (batchSold[item.id] ??
+                          (item.auto_sold ? (item.auto_sold_price ?? item.price) : item.price)),
+                      0,
+                    ),
+                  )}{' '}
+                  D
+                </b>
+              </span>
+              <button
+                type="button"
+                onClick={() => void spin()}
+                disabled={spinning || !canAfford}
+                className="flex items-center gap-1.5 rounded-lg bg-accent/90 px-3 py-2 text-[9px] font-semibold text-white disabled:opacity-50"
+              >
+                <RotateCw size={12} /> Ещё ×3
+              </button>
+            </div>
           </motion.section>
         )}
       </AnimatePresence>
