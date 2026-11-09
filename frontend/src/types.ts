@@ -183,6 +183,7 @@ export interface UpgradePreview {
 export interface UpgradeResult {
   id: number;
   success: boolean;
+  jackpot: boolean;
   chance: number;
   multiplier: number;
   spent_value: number;

@@ -193,6 +193,7 @@ class UpgradePreviewOut(BaseModel):
 class UpgradeOut(BaseModel):
     id: int
     success: bool
+    jackpot: bool = False
     chance: float
     multiplier: float
     spent_value: int

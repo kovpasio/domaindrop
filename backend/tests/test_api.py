@@ -84,6 +84,16 @@ class FakeRng:
         return values[0]
 
 
+class FixedRng:
+    """Rng stub that always returns the same roll."""
+
+    def __init__(self, value: float) -> None:
+        self.value = value
+
+    def random(self) -> float:
+        return self.value
+
+
 @pytest.fixture
 async def test_context(monkeypatch):
     engine = create_async_engine(
@@ -403,6 +413,45 @@ async def test_triple_spin_and_custom_upgrade_chance(test_context):
     )
     assert custom_upgrade.status_code == 200, custom_upgrade.text
     assert custom_upgrade.json()["chance"] == 1
+
+
+async def test_upgrade_jackpot_zone_multiplies_reward(test_context, monkeypatch):
+    client, _Session, _fake = test_context
+    _payload, headers = await _auth(client)
+
+    spin = await client.post(
+        "/api/spin", headers=headers, json={"roll_type": "normal", "times": 3}
+    )
+    assert spin.status_code == 200, spin.text
+    ids = [item["inventory_id"] for item in spin.json()["items"]]
+    assert len(ids) == 3
+
+    # Roll 0.0 => the arrow stops in the bottom 1% of the filled scale.
+    monkeypatch.setattr(upgrades, "rng", FixedRng(0.0))
+    jackpot = await client.post(
+        "/api/upgrade",
+        headers=headers,
+        json={"domain_ids": [ids[0]], "chance_sector": 50, "chance": 50},
+    )
+    assert jackpot.status_code == 200, jackpot.text
+    data = jackpot.json()
+    assert data["success"] is True
+    assert data["jackpot"] is True
+    # 100 / 50 * x5
+    assert data["multiplier"] == 10.0
+
+    # Roll 0.5 on a 75% chance is a regular hit, outside the jackpot band.
+    monkeypatch.setattr(upgrades, "rng", FixedRng(0.5))
+    regular = await client.post(
+        "/api/upgrade",
+        headers=headers,
+        json={"domain_ids": [ids[1]], "chance_sector": 75, "chance": 75},
+    )
+    assert regular.status_code == 200, regular.text
+    regular_data = regular.json()
+    assert regular_data["success"] is True
+    assert regular_data["jackpot"] is False
+    assert regular_data["multiplier"] == pytest.approx(100 / 75)
 
 
 async def test_daily_bonus_is_25_percent_of_balance(test_context):

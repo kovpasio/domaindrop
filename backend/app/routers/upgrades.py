@@ -9,7 +9,12 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.economy import rarity_for_price, upgrade_target_value
+from app.economy import (
+    UPGRADE_JACKPOT_MULTIPLIER,
+    UPGRADE_JACKPOT_ZONE_SHARE,
+    rarity_for_price,
+    upgrade_target_value,
+)
 from app.models import Domain, Inventory, Upgrade, User
 from app.schemas import (
     DomainOut,
@@ -126,8 +131,17 @@ async def upgrade_domains(
     elif not 1 <= exact_chance <= 75.99:
         raise HTTPException(status_code=422, detail="Шанс должен быть от 1 до 75%")
     exact_chance = round(exact_chance, 2)
-    multiplier = 100 / exact_chance
-    success = rng.random() * 100 < exact_chance
+    # A single roll drives both the arrow position and the outcome. The scale
+    # fills symmetrically from the bottom, so `roll` is the distance from the
+    # bottom of the wheel.
+    roll = rng.random() * 100
+    success = roll < exact_chance
+    # The jackpot zone is the lowest 1% of the filled arc: the arrow has to be
+    # a successful hit and land in that narrow band.
+    jackpot = success and roll < exact_chance * UPGRADE_JACKPOT_ZONE_SHARE
+    multiplier = (100 / exact_chance) * (
+        UPGRADE_JACKPOT_MULTIPLIER if jackpot else 1
+    )
     now = datetime.now(timezone.utc)
 
     # All selected domains are consumed in both outcomes.
@@ -136,6 +150,8 @@ async def upgrade_domains(
         item.sold_price = 0
 
     theoretical_value = upgrade_target_value(spent_value, exact_chance)
+    if jackpot:
+        theoretical_value *= UPGRADE_JACKPOT_MULTIPLIER
     target_rarity = rarity_for_price(theoretical_value)
     target_value = theoretical_value
     won_domain: Domain | None = None
@@ -190,6 +206,7 @@ async def upgrade_domains(
     return UpgradeOut(
         id=upgrade.id,
         success=success,
+        jackpot=jackpot,
         chance=exact_chance,
         multiplier=multiplier,
         spent_value=spent_value,

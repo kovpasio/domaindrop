@@ -144,6 +144,13 @@ UPGRADE_SECTORS: dict[int, float] = {
     75: 4 / 3,
 }
 
+# The upgrade scale fills symmetrically from the bottom. Its lowest 1% is a
+# jackpot zone: the zone is a share of the filled arc, so it shrinks together
+# with the chance instead of staying a fixed slice of the wheel.
+UPGRADE_JACKPOT_ZONE_SHARE = 0.01
+UPGRADE_JACKPOT_MULTIPLIER = 5
+
+
 def upgrade_target_value(stake: int, chance: float) -> int:
     """Target price = stake * 100 / exact chance."""
     if chance <= 0:

@@ -9,6 +9,7 @@ import {
   PackageOpen,
   Sparkles,
   X,
+  Zap,
 } from 'lucide-react';
 import { api } from '@/api/client';
 import { useAuth } from '@/context/AuthContext';
@@ -37,15 +38,34 @@ const FALLBACK_SECTORS: UpgradeSector[] = [
 
 const SECTOR_COLORS = ['#4D9BFF', '#B07CFF', '#F2A54A', '#43D6C5'];
 
-function landingAngle(chance: number, success: boolean): number {
-  const filled = Math.min(358, Math.max(2, chance * 3.6));
-  if (success) {
-    const pad = Math.min(5, filled / 4);
-    return pad + Math.random() * Math.max(1, filled - pad * 2);
+// The scale fills from the bottom (6 o'clock) symmetrically to both sides, so a
+// chance of N% covers N * 1.8deg on each half of the wheel. The lowest 1% of the
+// filled arc is a jackpot band: the arrow there pays x5.
+const JACKPOT_ZONE_SHARE = 0.01;
+const JACKPOT_MULTIPLIER = 5;
+
+function filledHalfAngle(chance: number): number {
+  return Math.min(179, Math.max(0.5, chance * 1.8));
+}
+
+function landingAngle(chance: number, success: boolean, jackpot: boolean): number {
+  const half = filledHalfAngle(chance);
+  // Half of the jackpot band, measured from the bottom of the wheel.
+  const jackpotHalf = Math.max(0.02, half * JACKPOT_ZONE_SHARE);
+  if (jackpot) {
+    return 180 + (Math.random() * 2 - 1) * jackpotHalf * 0.8;
   }
-  const free = 360 - filled;
-  const pad = Math.min(5, free / 4);
-  return filled + pad + Math.random() * Math.max(1, free - pad * 2);
+  if (success) {
+    const span = Math.max(0.05, half - jackpotHalf);
+    const side = Math.random() < 0.5 ? -1 : 1;
+    const pad = Math.min(1.5, span * 0.15);
+    return 180 + side * (jackpotHalf + pad + Math.random() * Math.max(0.01, span - pad * 2));
+  }
+  // Miss area is the uncovered part of the wheel, centered on the top.
+  const freeHalf = 180 - half;
+  const pad = Math.min(4, freeHalf * 0.25);
+  const offset = Math.max(0.1, freeHalf - pad);
+  return (360 + (Math.random() * 2 - 1) * offset) % 360;
 }
 
 export function UpgraderPage() {
@@ -171,7 +191,7 @@ export function UpgraderPage() {
         sector.sector,
         attemptChance,
       );
-      const finalAngle = landingAngle(attemptChance, response.success);
+      const finalAngle = landingAngle(attemptChance, response.success, response.jackpot);
       setArrowAngle(1440 + finalAngle);
       setArrowMoving(true);
       // The spin happens inside the tab, then the result appears in place.
@@ -595,7 +615,15 @@ function ChanceWheel({
   const center = 120;
   const radius = 88;
   const circumference = 2 * Math.PI * radius;
-  const filled = circumference * Math.min(100, Math.max(0, percent)) / 100;
+  // The scale is mirrored around the bottom of the wheel: each half covers
+  // `percent * 1.8` degrees starting at 6 o'clock.
+  const halfAngle = filledHalfAngle(percent);
+  const halfArc = (circumference * halfAngle) / 360;
+  // The jackpot band is 1% of the filled arc. It gets a small visual minimum so
+  // the marker stays readable; the real trigger probability always follows the
+  // chance on the server.
+  const jackpotAngle = Math.max(0.5, halfAngle * JACKPOT_ZONE_SHARE);
+  const jackpotArc = (circumference * jackpotAngle * 2) / 360;
 
   return (
     <div className="relative" style={{ width: size, height: size }}>
@@ -607,17 +635,35 @@ function ChanceWheel({
         <circle cx={center} cy={center} r={104} fill="none" stroke="#273A52" strokeWidth="1" opacity=".7" />
         <circle cx={center} cy={center} r={radius} fill="none" stroke="#24364E" strokeWidth="16" />
 
+        {[
+          `rotate(90 ${center} ${center})`,
+          `rotate(${90 - halfAngle} ${center} ${center})`,
+        ].map((transform) => (
+          <circle
+            key={transform}
+            cx={center}
+            cy={center}
+            r={radius}
+            fill="none"
+            stroke={color}
+            strokeWidth="16"
+            strokeLinecap="round"
+            strokeDasharray={`${halfArc} ${circumference - halfArc}`}
+            transform={transform}
+            style={{ filter: `drop-shadow(0 0 7px ${color}88)` }}
+          />
+        ))}
+
         <circle
           cx={center}
           cy={center}
           r={radius}
           fill="none"
-          stroke={color}
+          stroke="#F2A54A"
           strokeWidth="16"
-          strokeLinecap="round"
-          strokeDasharray={`${filled} ${circumference - filled}`}
-          transform={`rotate(-90 ${center} ${center})`}
-          style={{ filter: `drop-shadow(0 0 7px ${color}88)` }}
+          strokeDasharray={`${jackpotArc} ${circumference - jackpotArc}`}
+          transform={`rotate(${90 - jackpotAngle} ${center} ${center})`}
+          style={{ filter: 'drop-shadow(0 0 6px #F2A54A99)' }}
         />
 
         {Array.from({ length: 48 }).map((_, index) => {
@@ -686,6 +732,14 @@ function ChanceWheel({
             : `${chanceRange[0].toFixed(2)}–${chanceRange[1].toFixed(2)}%`}
         </div>
       </div>
+
+      <div
+        title="Попадание в нижнюю зону умножает награду на 5"
+        className="pointer-events-none absolute left-1/2 -translate-x-1/2 rounded-full border border-gold/45 bg-ink-900/95 px-1.5 py-[1px] text-[7px] font-bold leading-[9px] tracking-[0.06em] text-gold"
+        style={{ bottom: size * 0.18 }}
+      >
+        ×{JACKPOT_MULTIPLIER}
+      </div>
     </div>
   );
 }
@@ -698,20 +752,36 @@ function ResultCard({ result, onClose }: { result: UpgradeResult; onClose: () =>
       exit={{ opacity: 0, y: -6 }}
       className={cn(
         'mb-4 overflow-hidden rounded-2xl border p-4',
-        result.success
-          ? 'border-teal/35 bg-gradient-to-br from-teal/[0.12] via-ink-800 to-accent/[0.08]'
-          : 'border-rarity-mythic/30 bg-gradient-to-br from-rarity-mythic/[0.1] via-ink-800 to-ink-800',
+        result.jackpot
+          ? 'border-gold/45 bg-gradient-to-br from-gold/[0.16] via-ink-800 to-gold/[0.05]'
+          : result.success
+            ? 'border-teal/35 bg-gradient-to-br from-teal/[0.12] via-ink-800 to-accent/[0.08]'
+            : 'border-rarity-mythic/30 bg-gradient-to-br from-rarity-mythic/[0.1] via-ink-800 to-ink-800',
       )}
     >
       <div className="flex items-center justify-between">
         <span
           className={cn(
             'flex items-center gap-1.5 text-[10px] font-semibold',
-            result.success ? 'text-teal' : 'text-rarity-mythic',
+            result.jackpot
+              ? 'text-gold'
+              : result.success
+                ? 'text-teal'
+                : 'text-rarity-mythic',
           )}
         >
-          {result.success ? <Sparkles size={12} /> : <Flame size={12} />}
-          {result.success ? 'Апгрейд удался' : 'Домены сгорели'}
+          {result.jackpot ? (
+            <Zap size={12} />
+          ) : result.success ? (
+            <Sparkles size={12} />
+          ) : (
+            <Flame size={12} />
+          )}
+          {result.jackpot
+            ? `Джекпот ×${JACKPOT_MULTIPLIER}`
+            : result.success
+              ? 'Апгрейд удался'
+              : 'Домены сгорели'}
         </span>
         <button
           type="button"
@@ -727,6 +797,11 @@ function ResultCard({ result, onClose }: { result: UpgradeResult; onClose: () =>
           <div className="mt-2 flex items-center gap-2">
             <RarityBadge rarity={result.domain.rarity} />
             <span className="text-[8px] text-muted">шанс {result.chance.toFixed(2)}%</span>
+            {result.jackpot && (
+              <span className="rounded-full border border-gold/50 bg-gold/15 px-1.5 py-px text-[7px] font-bold text-gold">
+                ×{JACKPOT_MULTIPLIER}
+              </span>
+            )}
           </div>
           <div className="mt-2 font-display text-[26px] font-semibold tracking-tight text-paper">
             {result.domain.name}
