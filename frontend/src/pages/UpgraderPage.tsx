@@ -43,6 +43,10 @@ const SECTOR_COLORS = ['#4D9BFF', '#B07CFF', '#F2A54A', '#43D6C5'];
 // filled arc is a jackpot band: the arrow there pays x5.
 const JACKPOT_ZONE_SHARE = 0.01;
 const JACKPOT_MULTIPLIER = 5;
+// Deliberately magenta/rose: it contrasts with all four sector colors,
+// including the gold 50% sector where the old gold jackpot band disappeared.
+const JACKPOT_ACCENT = '#FF3D8D';
+const JACKPOT_ACCENT_SOFT = '#FF8DB7';
 
 function filledHalfAngle(chance: number): number {
   return Math.min(179, Math.max(0.5, chance * 1.8));
@@ -632,6 +636,13 @@ function ChanceWheel({
         style={{ background: `${color}1F` }}
       />
       <svg viewBox="0 0 240 240" className="relative h-full w-full overflow-visible">
+        <defs>
+          <linearGradient id="jackpotGradient" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#FF2D7A" />
+            <stop offset="48%" stopColor={JACKPOT_ACCENT} />
+            <stop offset="100%" stopColor="#FF6B9A" />
+          </linearGradient>
+        </defs>
         <circle cx={center} cy={center} r={104} fill="none" stroke="#273A52" strokeWidth="1" opacity=".7" />
         <circle cx={center} cy={center} r={radius} fill="none" stroke="#24364E" strokeWidth="16" />
 
@@ -659,11 +670,24 @@ function ChanceWheel({
           cy={center}
           r={radius}
           fill="none"
-          stroke="#F2A54A"
-          strokeWidth="16"
+          stroke="url(#jackpotGradient)"
+          strokeWidth="18"
+          strokeLinecap="round"
           strokeDasharray={`${jackpotArc} ${circumference - jackpotArc}`}
           transform={`rotate(${90 - jackpotAngle} ${center} ${center})`}
-          style={{ filter: 'drop-shadow(0 0 6px #F2A54A99)' }}
+          style={{ filter: 'drop-shadow(0 0 9px #FF3D8DCC)' }}
+        />
+        <circle
+          cx={center}
+          cy={center}
+          r={radius}
+          fill="none"
+          stroke={JACKPOT_ACCENT_SOFT}
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeDasharray={`${jackpotArc * 0.72} ${circumference - jackpotArc * 0.72}`}
+          transform={`rotate(${90 - jackpotAngle * 0.86} ${center} ${center})`}
+          opacity=".9"
         />
 
         {Array.from({ length: 48 }).map((_, index) => {
@@ -735,7 +759,7 @@ function ChanceWheel({
 
       <div
         title="Попадание в нижнюю зону умножает награду на 5"
-        className="pointer-events-none absolute left-1/2 -translate-x-1/2 rounded-full border border-gold/45 bg-ink-900/95 px-1.5 py-[1px] text-[7px] font-bold leading-[9px] tracking-[0.06em] text-gold"
+        className="pointer-events-none absolute left-1/2 -translate-x-1/2 rounded-full border border-[#FF6B9A]/70 bg-[#2A1020]/95 px-2 py-[2px] text-[7px] font-bold leading-[9px] tracking-[0.08em] text-[#FF9DBF] shadow-[0_0_12px_rgba(255,61,141,0.45)]"
         style={{ bottom: size * 0.18 }}
       >
         ×{JACKPOT_MULTIPLIER}
@@ -753,7 +777,7 @@ function ResultCard({ result, onClose }: { result: UpgradeResult; onClose: () =>
       className={cn(
         'mb-4 overflow-hidden rounded-2xl border p-4',
         result.jackpot
-          ? 'border-gold/45 bg-gradient-to-br from-gold/[0.16] via-ink-800 to-gold/[0.05]'
+          ? 'border-[#FF4D8D]/55 bg-gradient-to-br from-[#FF3D8D]/[0.16] via-ink-800 to-[#FF3D8D]/[0.05]'
           : result.success
             ? 'border-teal/35 bg-gradient-to-br from-teal/[0.12] via-ink-800 to-accent/[0.08]'
             : 'border-rarity-mythic/30 bg-gradient-to-br from-rarity-mythic/[0.1] via-ink-800 to-ink-800',
@@ -764,7 +788,7 @@ function ResultCard({ result, onClose }: { result: UpgradeResult; onClose: () =>
           className={cn(
             'flex items-center gap-1.5 text-[10px] font-semibold',
             result.jackpot
-              ? 'text-gold'
+              ? 'text-[#FF9DBF]'
               : result.success
                 ? 'text-teal'
                 : 'text-rarity-mythic',
@@ -798,7 +822,7 @@ function ResultCard({ result, onClose }: { result: UpgradeResult; onClose: () =>
             <RarityBadge rarity={result.domain.rarity} />
             <span className="text-[8px] text-muted">шанс {result.chance.toFixed(2)}%</span>
             {result.jackpot && (
-              <span className="rounded-full border border-gold/50 bg-gold/15 px-1.5 py-px text-[7px] font-bold text-gold">
+              <span className="rounded-full border border-[#FF4D8D]/60 bg-[#FF3D8D]/15 px-1.5 py-px text-[7px] font-bold text-[#FF9DBF]">
                 ×{JACKPOT_MULTIPLIER}
               </span>
             )}
