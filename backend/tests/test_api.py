@@ -25,6 +25,7 @@ from app.routers import (
     leaderboard,
     settings as settings_router,
     spins,
+    tasks,
     upgrades,
     users,
 )
@@ -130,6 +131,7 @@ async def test_context(monkeypatch):
         leaderboard.router,
         settings_router.router,
         upgrades.router,
+        tasks.router,
     ):
         app.include_router(router, prefix="/api")
     app.dependency_overrides[get_db] = override_db
@@ -452,6 +454,29 @@ async def test_upgrade_jackpot_zone_multiplies_reward(test_context, monkeypatch)
     assert regular_data["success"] is True
     assert regular_data["jackpot"] is False
     assert regular_data["multiplier"] == pytest.approx(100 / 75)
+
+
+async def test_daily_tasks_and_player_stats(test_context):
+    client, _Session, _fake = test_context
+    _payload, headers = await _auth(client)
+
+    tasks = await client.get("/api/tasks", headers=headers)
+    assert tasks.status_code == 200, tasks.text
+    payload = tasks.json()
+    assert len(payload["tasks"]) == 3
+    assert all(task["progress"] == 0 for task in payload["tasks"])
+    assert all(task["can_claim"] is False for task in payload["tasks"])
+
+    incomplete = await client.post("/api/tasks/spins_10/claim", headers=headers)
+    assert incomplete.status_code == 409
+
+    me = await client.get("/api/me", headers=headers)
+    assert me.status_code == 200
+    stats = me.json()["stats"]
+    assert stats["total_earned"] == 0
+    assert stats["total_spent"] == 0
+    assert stats["mythic_drops"] == 0
+    assert stats["upgrades_total"] == 0
 
 
 async def test_daily_bonus_is_25_percent_of_balance(test_context):

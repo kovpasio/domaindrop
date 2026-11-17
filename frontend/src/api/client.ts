@@ -7,6 +7,7 @@ import type {
   AutosellSettings,
   BulkSellResult,
   DailyBonusResponse,
+  DailyTasksResponse,
   Domain,
   DropsResponse,
   EarnResult,
@@ -20,6 +21,7 @@ import type {
   SellResult,
   SpinBatchResult,
   SpinResult,
+  TaskClaimResult,
   UpgradePreview,
   UpgradeResult,
 } from '@/types';
@@ -178,6 +180,13 @@ export const api = {
 
   dailyBonus: () =>
     request<DailyBonusResponse>('/daily-bonus', { method: 'POST' }),
+
+  tasks: () => request<DailyTasksResponse>('/tasks'),
+
+  claimTask: (key: string) =>
+    request<TaskClaimResult>(`/tasks/${encodeURIComponent(key)}/claim`, {
+      method: 'POST',
+    }),
 
   earnClick: () => request<EarnResult>('/earnings/click', { method: 'POST' }),
 

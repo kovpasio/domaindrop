@@ -73,6 +73,35 @@ class MeStats(BaseModel):
     daily_bonus: int
     daily_available_at: datetime | None
     can_daily_bonus: bool
+    total_earned: int
+    total_spent: int
+    best_drop: int
+    biggest_sale: int
+    mythic_drops: int
+    upgrades_total: int
+    upgrades_success: int
+
+
+class DailyTaskOut(BaseModel):
+    key: str
+    title: str
+    description: str
+    target: int
+    progress: int
+    reward: int
+    claimed: bool
+    can_claim: bool
+
+
+class DailyTasksOut(BaseModel):
+    day: str
+    tasks: list[DailyTaskOut]
+
+
+class TaskClaimOut(BaseModel):
+    key: str
+    amount: int
+    balance: int
 
 
 class LuckProgressOut(BaseModel):

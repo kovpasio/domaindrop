@@ -13,6 +13,7 @@ from app.models import User
 from app.schemas import DailyBonusOut, LuckProgressOut, MeOut, MeStats, UserOut
 from app.security import get_current_user
 from app.services.luck import luck_profile
+from app.services.player_stats import player_stats
 from app.services.stats import (
     collection_breakdown,
     collection_stats,
@@ -35,6 +36,7 @@ async def build_me(db: AsyncSession, user: User) -> MeOut:
     by_rarity = await collection_breakdown(db, user.id)
     rank = await user_rank(db, user.id)
     players = await total_players(db)
+    stats = await player_stats(db, user.id)
     now = datetime.now(timezone.utc)
     last_bonus = _as_utc(user.last_daily_bonus)
     next_bonus = (
@@ -70,6 +72,7 @@ async def build_me(db: AsyncSession, user: User) -> MeOut:
             ),
             daily_available_at=next_bonus,
             can_daily_bonus=can_daily,
+            **stats,
         ),
     )
 

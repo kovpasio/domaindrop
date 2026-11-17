@@ -35,6 +35,35 @@ export interface MeStats {
   daily_bonus: number;
   daily_available_at: string | null;
   can_daily_bonus: boolean;
+  total_earned: number;
+  total_spent: number;
+  best_drop: number;
+  biggest_sale: number;
+  mythic_drops: number;
+  upgrades_total: number;
+  upgrades_success: number;
+}
+
+export interface DailyTask {
+  key: string;
+  title: string;
+  description: string;
+  target: number;
+  progress: number;
+  reward: number;
+  claimed: boolean;
+  can_claim: boolean;
+}
+
+export interface DailyTasksResponse {
+  day: string;
+  tasks: DailyTask[];
+}
+
+export interface TaskClaimResult {
+  key: string;
+  amount: number;
+  balance: number;
 }
 
 export interface LuckProgress {

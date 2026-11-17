@@ -3,12 +3,16 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowUpFromLine,
+  BarChart3,
+  Check,
   ChevronRight,
   Coins,
   Gift,
   Layers,
   Settings2,
   Sparkles,
+  Target,
+  TrendingUp,
   Trophy,
 } from 'lucide-react';
 import { ApiError, api } from '@/api/client';
@@ -19,6 +23,7 @@ import { Avatar } from '@/components/Avatar';
 import { Coin } from '@/components/Coin';
 import { SectionTitle } from '@/components/SectionTitle';
 import { StatTile } from '@/components/StatTile';
+import type { DailyTask } from '@/types';
 import {
   cn,
   countdown,
@@ -31,16 +36,45 @@ import {
 } from '@/lib/utils';
 
 export function ProfilePage() {
-  const { me, refresh } = useAuth();
+  const { me, refresh, applyBalance } = useAuth();
   const { toast } = useToast();
   const { playCoin } = useSound();
   const [claiming, setClaiming] = useState(false);
+  const [tasks, setTasks] = useState<DailyTask[]>([]);
+  const [claimingTask, setClaimingTask] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    void api
+      .tasks()
+      .then((response) => setTasks(response.tasks))
+      .catch(() => undefined);
+  }, []);
+
+  async function claimTask(key: string) {
+    if (claimingTask) return;
+    setClaimingTask(key);
+    hapticImpact('light');
+    try {
+      const result = await api.claimTask(key);
+      applyBalance(result.balance);
+      playCoin();
+      hapticNotify('success');
+      toast(`Награда за задание: +${formatNumber(result.amount)} D`, 'success');
+      const response = await api.tasks();
+      setTasks(response.tasks);
+      await refresh();
+    } catch (error) {
+      toast(error instanceof ApiError ? error.message : 'Не удалось получить награду', 'error');
+    } finally {
+      setClaimingTask(null);
+    }
+  }
 
   if (!me) return null;
   const { user, stats, progress } = me;
@@ -195,6 +229,107 @@ export function ProfilePage() {
           Удача сдвигает шансы в сторону Rare+. Домены в инвентаре усиливают бонус, пока вы их не
           продали.
         </p>
+      </section>
+
+      <section className="rounded-2xl border border-white/[0.06] bg-ink-800 p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-[10px] font-semibold text-paper">
+            <Target size={13} className="text-accent-soft" /> Ежедневные задания
+          </div>
+          <span className="text-[8px] text-muted/60">
+            {tasks.filter((task) => task.claimed).length} / {tasks.length}
+          </span>
+        </div>
+        <div className="mt-3 space-y-2">
+          {tasks.length === 0 ? (
+            <div className="text-[9px] text-muted/50">Загрузка заданий…</div>
+          ) : (
+            tasks.map((task) => {
+              const complete = task.progress >= task.target;
+              return (
+                <div
+                  key={task.key}
+                  className="rounded-xl border border-white/[0.05] bg-ink-900/60 p-2.5"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        {task.claimed ? (
+                          <Check size={12} className="text-teal" />
+                        ) : complete ? (
+                          <Sparkles size={12} className="text-gold" />
+                        ) : (
+                          <Target size={12} className="text-muted/50" />
+                        )}
+                        <span className="text-[10px] font-semibold text-paper">{task.title}</span>
+                      </div>
+                      <div className="mt-0.5 text-[8px] text-muted/60">{task.description}</div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={!task.can_claim || claimingTask !== null}
+                      onClick={() => void claimTask(task.key)}
+                      className={cn(
+                        'shrink-0 rounded-lg px-2 py-1.5 text-[8px] font-bold transition',
+                        task.claimed
+                          ? 'bg-teal/10 text-teal'
+                          : task.can_claim
+                            ? 'bg-accent/90 text-white active:scale-95'
+                            : 'bg-white/[0.04] text-muted/40',
+                      )}
+                    >
+                      {task.claimed ? 'получено' : claimingTask === task.key ? '…' : `+${formatNumber(task.reward)}`}
+                    </button>
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/[0.05]">
+                      <div
+                        className={cn(
+                          'h-full rounded-full transition-all',
+                          task.claimed ? 'bg-teal/70' : 'bg-gradient-to-r from-accent to-teal',
+                        )}
+                        style={{ width: `${Math.min(100, (task.progress / task.target) * 100)}%` }}
+                      />
+                    </div>
+                    <span className="w-8 text-right font-display text-[8px] tabular-nums text-muted/70">
+                      {task.progress}/{task.target}
+                    </span>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-white/[0.06] bg-ink-800 p-4">
+        <div className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold text-paper">
+          <BarChart3 size={13} className="text-accent-soft" /> Статистика
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { label: 'Всего спинов', value: formatNumber(user.total_spins), accent: 'text-paper' },
+            { label: 'Заработано', value: `${formatNumber(stats.total_earned)} D`, accent: 'text-teal' },
+            { label: 'Потрачено', value: `${formatNumber(stats.total_spent)} D`, accent: 'text-gold' },
+            { label: 'Лучший дроп', value: `${formatNumber(stats.best_drop)} D`, accent: 'text-rarity-legendary' },
+            { label: 'Mythic-дропы', value: formatNumber(stats.mythic_drops), accent: 'text-rarity-mythic' },
+            {
+              label: 'Апгрейды',
+              value: `${formatNumber(stats.upgrades_success)} / ${formatNumber(stats.upgrades_total)}`,
+              accent: 'text-accent-soft',
+            },
+          ].map((item) => (
+            <div key={item.label} className="rounded-xl border border-white/[0.05] bg-ink-900/60 px-3 py-2.5">
+              <div className="text-[7px] uppercase tracking-[0.1em] text-muted/50">{item.label}</div>
+              <div className={cn('mt-1 truncate font-display text-[13px] font-semibold', item.accent)}>
+                {item.value}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-2 flex items-center gap-1 text-[8px] text-muted/45">
+          <TrendingUp size={10} /> Крупнейшая продажа: {formatNumber(stats.biggest_sale)} D
+        </div>
       </section>
 
       <button
