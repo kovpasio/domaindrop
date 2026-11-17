@@ -240,6 +240,30 @@ export function ProfilePage() {
         </p>
       </section>
 
+      <section className="rounded-2xl border border-rarity-mythic/20 bg-gradient-to-r from-rarity-mythic/[0.08] to-transparent p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-[10px] font-semibold text-paper">
+            <Target size={13} className="text-rarity-mythic" /> Гарант Mythic
+          </div>
+          <span className="font-display text-[11px] font-semibold text-rarity-mythic">
+            {stats.pity_counter} / {stats.pity_threshold}
+          </span>
+        </div>
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-rarity-mythic to-rarity-legendary transition-all duration-500"
+            style={{
+              width: `${Math.min(100, (stats.pity_counter / stats.pity_threshold) * 100)}%`,
+            }}
+          />
+        </div>
+        <p className="mt-1.5 text-[8px] text-muted/60">
+          {stats.pity_counter + 1 >= stats.pity_threshold
+            ? 'Следующий Mythic гарантирован'
+            : `До гарантированного Mythic: ${stats.pity_threshold - stats.pity_counter} круток`}
+        </p>
+      </section>
+
       <section className="rounded-2xl border border-white/[0.06] bg-ink-800 p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-[10px] font-semibold text-paper">

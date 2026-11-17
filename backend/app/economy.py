@@ -150,6 +150,10 @@ UPGRADE_SECTORS: dict[int, float] = {
 UPGRADE_JACKPOT_ZONE_SHARE = 0.01
 UPGRADE_JACKPOT_MULTIPLIER = 5
 
+# Pity: after this many non-Mythic drops the next drop is guaranteed Mythic.
+PITY_THRESHOLD = 200
+PITY_RARITY = "mythic"
+
 
 def upgrade_target_value(stake: int, chance: float) -> int:
     """Target price = stake * 100 / exact chance."""

@@ -43,6 +43,8 @@ export interface MeStats {
   mythic_drops: number;
   upgrades_total: number;
   upgrades_success: number;
+  pity_counter: number;
+  pity_threshold: number;
 }
 
 export interface DailyTask {
@@ -190,6 +192,7 @@ export interface SpinResult {
   balance: number;
   auto_sold: boolean;
   auto_sold_price: number | null;
+  pity_applied: boolean;
   inventory_id: number | null;
   created_at: string;
 }

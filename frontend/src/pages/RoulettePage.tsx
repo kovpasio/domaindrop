@@ -422,6 +422,11 @@ export function RoulettePage() {
           <div className="mt-1 text-[8px] font-semibold text-teal">
             удача +{me.progress.total_luck.toFixed(1)}%
           </div>
+          <div className="mt-0.5 text-[7px] text-rarity-mythic/80">
+            {me.stats.pity_counter + 1 >= me.stats.pity_threshold
+              ? 'Mythic гарантирован'
+              : `гарант через ${me.stats.pity_threshold - me.stats.pity_counter}`}
+          </div>
         </div>
       </div>
 
@@ -673,7 +678,12 @@ export function RoulettePage() {
                   <Coins size={10} /> продано
                 </span>
               ) : (
-                <span className="text-[8px] text-muted/60">
+                <span className="flex items-center gap-1 text-[8px] text-muted/60">
+                  {result.pity_applied && (
+                    <span className="rounded bg-rarity-mythic/15 px-1 py-0.5 text-[7px] font-bold text-rarity-mythic">
+                      гарант
+                    </span>
+                  )}
                   {result.times > 1 ? `×${result.times} · ` : ''}#{result.id}
                 </span>
               )}

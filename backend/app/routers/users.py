@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.database import get_db
-from app.economy import daily_bonus_for
+from app.economy import PITY_THRESHOLD, daily_bonus_for
 from app.models import User
 from app.schemas import DailyBonusOut, LuckProgressOut, MeOut, MeStats, UserOut
 from app.security import get_current_user
@@ -81,6 +81,8 @@ async def build_me(db: AsyncSession, user: User) -> MeOut:
             daily_available_at=next_bonus,
             can_daily_bonus=can_daily,
             **stats,
+            pity_counter=int(user.pity_counter),
+            pity_threshold=PITY_THRESHOLD,
         ),
     )
 

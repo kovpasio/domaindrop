@@ -12,7 +12,7 @@ from sqlalchemy.orm import noload
 
 from app.config import settings
 from app.database import get_db
-from app.economy import SPIN_TYPES
+from app.economy import PITY_RARITY, PITY_THRESHOLD, SPIN_TYPES
 from app.models import Domain, Inventory, Spin, User
 from app.schemas import DomainOut, KeepSpinOut, SpinBatchOut, SpinIn, SpinOut
 from app.security import get_current_user
@@ -114,7 +114,8 @@ async def spin(
         created: list[tuple[Spin, Domain, Inventory | None, bool, int]] = []
         seen_domains: set[int] = set()
         for _ in range(times):
-            rarity = choose_rarity(roll, chances)
+            pity_applied = locked_user.pity_counter + 1 >= PITY_THRESHOLD
+            rarity = PITY_RARITY if pity_applied else choose_rarity(roll, chances)
             domain = None
             for _attempt in range(20):
                 candidate = await random_domain_in_rarity(db, rarity)
@@ -134,6 +135,10 @@ async def spin(
             if auto_sold:
                 locked_user.balance += sale_price
             locked_user.total_spins += 1
+            if domain.rarity == PITY_RARITY:
+                locked_user.pity_counter = 0
+            else:
+                locked_user.pity_counter += 1
 
             server_seed = secrets.token_hex(32)
             spin_row = Spin(
@@ -151,7 +156,7 @@ async def spin(
                 domain_roll=0,
                 domain_index=0,
                 bucket_size=0,
-                pity_applied=False,
+                pity_applied=pity_applied,
                 price=price,
                 auto_sold=auto_sold,
                 auto_sold_price=sale_price if auto_sold else None,
@@ -190,6 +195,7 @@ async def spin(
                     balance=locked_user.balance,
                     auto_sold=auto_sold,
                     auto_sold_price=sale_price if auto_sold else None,
+                    pity_applied=bool(spin_row.pity_applied),
                     inventory_id=inventory_row.id if inventory_row is not None else None,
                     created_at=spin_row.created_at,
                 )

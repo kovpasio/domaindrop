@@ -81,6 +81,8 @@ class MeStats(BaseModel):
     mythic_drops: int
     upgrades_total: int
     upgrades_success: int
+    pity_counter: int
+    pity_threshold: int
 
 
 class DailyTaskOut(BaseModel):
@@ -173,6 +175,7 @@ class SpinOut(BaseModel):
     balance: int
     auto_sold: bool
     auto_sold_price: int | None
+    pity_applied: bool = False
     inventory_id: int | None = None
     created_at: datetime
 

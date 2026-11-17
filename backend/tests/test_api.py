@@ -488,6 +488,25 @@ async def test_daily_tasks_and_player_stats(test_context):
     assert stats["upgrades_total"] == 0
 
 
+async def test_pity_forces_mythic_and_resets_counter(test_context):
+    client, Session, _fake = test_context
+    payload, headers = await _auth(client)
+    async with Session() as session:
+        user = await session.get(User, payload["user"]["id"])
+        assert user is not None
+        user.pity_counter = 199
+        await session.commit()
+
+    spin = await client.post("/api/spin", headers=headers, json={"roll_type": "normal"})
+    assert spin.status_code == 200, spin.text
+    data = spin.json()
+    assert data["pity_applied"] is True
+    assert data["rarity"] == "mythic"
+
+    me = await client.get("/api/me", headers=headers)
+    assert me.json()["stats"]["pity_counter"] == 0
+
+
 async def test_profile_frames_buy_and_equip(test_context):
     client, _Session, _fake = test_context
     _payload, headers = await _auth(client)
