@@ -14,6 +14,9 @@ import { EarningsPage } from '@/pages/EarningsPage';
 import { UpgraderPage } from '@/pages/UpgraderPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { MorePage } from '@/pages/MorePage';
+import { StatisticsPage } from '@/pages/StatisticsPage';
+import { AchievementsPage } from '@/pages/AchievementsPage';
+import { FramesPage } from '@/pages/FramesPage';
 
 export default function App() {
   const { loading, error, me, retry } = useAuth();
@@ -61,6 +64,9 @@ export default function App() {
         <Route path="/upgrader" element={<UpgraderPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/more" element={<MorePage />} />
+        <Route path="/statistics" element={<StatisticsPage />} />
+        <Route path="/achievements" element={<AchievementsPage />} />
+        <Route path="/frames" element={<FramesPage />} />
         <Route path="/admin" element={<AdminPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

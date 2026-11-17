@@ -18,6 +18,7 @@ from app.routers import (
     domains,
     drops,
     earnings,
+    frames,
     inventory,
     leaderboard,
     settings as settings_router,
@@ -90,6 +91,7 @@ app.include_router(settings_router.router, prefix=api_prefix)
 app.include_router(upgrades.router, prefix=api_prefix)
 app.include_router(tasks.router, prefix=api_prefix)
 app.include_router(achievements.router, prefix=api_prefix)
+app.include_router(frames.router, prefix=api_prefix)
 
 
 @app.get("/api/health", response_model=HealthOut, tags=["system"])

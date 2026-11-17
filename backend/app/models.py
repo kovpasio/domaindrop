@@ -57,6 +57,9 @@ class User(Base):
     balance: Mapped[int] = mapped_column(BigInteger, nullable=False, default=settings.start_balance)
     pity_counter: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     total_spins: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    frame_key: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="default", server_default="default"
+    )
     is_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
     is_banned: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
     ban_reason: Mapped[str | None] = mapped_column(String(256), nullable=True)
@@ -81,6 +84,22 @@ class CatalogMeta(Base):
 
     key: Mapped[str] = mapped_column(String(64), primary_key=True)
     value: Mapped[str] = mapped_column(String(128), nullable=False)
+
+
+class UserFrame(Base):
+    __tablename__ = "user_frames"
+    __table_args__ = (
+        UniqueConstraint("user_id", "frame_key", name="uq_user_frame"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    frame_key: Mapped[str] = mapped_column(String(32), nullable=False)
+    acquired_at: Mapped[datetime] = mapped_column(
+        UTCDateTime(), nullable=False, server_default=func.now()
+    )
 
 
 class DailyTaskClaim(Base):

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { cn, initials } from '@/lib/utils';
+import { frameStyle } from '@/lib/frames';
 
 const GRADIENTS = [
   'from-[#5FB3FF] via-[#4F9DFF] to-[#B07CFF]',
@@ -23,22 +24,35 @@ interface AvatarProps {
   size?: number;
   className?: string;
   glow?: boolean;
+  frame?: string | null;
 }
 
-export function Avatar({ src, name, size = 48, className, glow = false }: AvatarProps) {
+export function Avatar({
+  src,
+  name,
+  size = 48,
+  className,
+  glow = false,
+  frame = 'default',
+}: AvatarProps) {
   const [failed, setFailed] = useState(false);
   const showImage = Boolean(src) && !failed;
+  const style = frameStyle(frame);
 
   return (
     <div
-      className={cn(
-        'relative shrink-0 rounded-full p-[1.5px]',
-        glow
-          ? 'bg-gradient-to-br from-accent-soft/80 via-accent/60 to-rarity-epic/70'
-          : 'bg-white/15',
-        className,
-      )}
-      style={{ width: size, height: size }}
+      className={cn('relative shrink-0 rounded-full p-[1.5px]', className)}
+      style={{
+        width: size,
+        height: size,
+        background: `linear-gradient(135deg, ${style.primary}, ${style.secondary})`,
+        boxShadow:
+          frame && frame !== 'default'
+            ? `0 0 0 1px ${style.primary}35, 0 0 14px ${style.primary}55`
+            : glow
+              ? '0 0 18px rgba(79,157,255,0.28)'
+              : undefined,
+      }}
     >
       <div
         className={cn(

@@ -24,6 +24,7 @@ class UserOut(BaseModel):
     avatar_url: str | None
     balance: int
     total_spins: int
+    frame_key: str
     is_admin: bool
     is_banned: bool
     created_at: datetime
@@ -118,6 +119,24 @@ class AchievementOut(BaseModel):
 class AchievementsOut(BaseModel):
     achievements: list[AchievementOut]
     total_luck: float
+
+
+class FrameOut(BaseModel):
+    key: str
+    title: str
+    description: str
+    price: int | None
+    achievement: str | None
+    primary: str
+    secondary: str
+    owned: bool
+    equipped: bool
+
+
+class FramesOut(BaseModel):
+    frames: list[FrameOut]
+    equipped: str
+    balance: int
 
 
 class LuckProgressOut(BaseModel):
@@ -259,6 +278,7 @@ class LeaderboardEntry(BaseModel):
     avatar_url: str | None
     score: int
     domains_count: int
+    frame_key: str
     level: int
     is_me: bool = False
 

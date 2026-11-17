@@ -17,6 +17,7 @@ def _scores_cte():
             User.username.label("username"),
             User.display_name.label("display_name"),
             User.avatar_url.label("avatar_url"),
+            User.frame_key.label("frame_key"),
             User.total_spins.label("total_spins"),
             func.coalesce(func.sum(Domain.price), 0).label("score"),
             func.count(Inventory.id).label("domains_count"),
@@ -32,6 +33,7 @@ def _scores_cte():
             User.username,
             User.display_name,
             User.avatar_url,
+            User.frame_key,
         )
         .cte("collection_scores")
     )
@@ -62,6 +64,7 @@ def _row_to_entry(row, me_id: int | None = None) -> LeaderboardEntry:
         avatar_url=row.avatar_url,
         score=int(row.score),
         domains_count=int(row.domains_count),
+        frame_key=row.frame_key or "default",
         level=level_index(int(row.total_spins or 0)) + 1,
         is_me=me_id is not None and int(row.user_id) == me_id,
     )

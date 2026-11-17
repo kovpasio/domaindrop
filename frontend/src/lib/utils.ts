@@ -40,6 +40,14 @@ export function countdown(iso: string | null): string {
   return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
 
+export function countdownHours(iso: string | null): string {
+  if (!iso) return 'сейчас';
+  const delta = new Date(iso).getTime() - Date.now();
+  if (delta <= 0) return 'сейчас';
+  const totalMinutes = Math.max(1, Math.ceil(delta / 60000));
+  return `${Math.floor(totalMinutes / 60)}ч ${totalMinutes % 60}м`;
+}
+
 export function plural(n: number, one: string, few: string, many: string): string {
   const mod10 = n % 10;
   const mod100 = n % 100;

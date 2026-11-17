@@ -194,7 +194,13 @@ function PodiumCard({
           <Icon size={14} />
         </motion.div>
       )}
-      <Avatar src={entry.avatar_url} name={entry.display_name} size={config.size} glow={place === 0} />
+      <Avatar
+        src={entry.avatar_url}
+        name={entry.display_name}
+        size={config.size}
+        frame={entry.frame_key}
+        glow={place === 0}
+      />
       <div className="mt-2.5 w-full truncate font-display text-[11px] font-bold text-white">
         {entry.display_name}
       </div>
@@ -237,7 +243,7 @@ function RankRow({ entry, highlight = false }: { entry: LeaderboardEntry; highli
       >
         {entry.rank}
       </div>
-      <Avatar src={entry.avatar_url} name={entry.display_name} size={34} />
+      <Avatar src={entry.avatar_url} name={entry.display_name} size={34} frame={entry.frame_key} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <span className="truncate text-[11px] font-semibold text-white/85">

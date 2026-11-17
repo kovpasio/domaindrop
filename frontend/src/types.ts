@@ -10,6 +10,7 @@ export interface User {
   avatar_url: string | null;
   balance: number;
   total_spins: number;
+  frame_key: string;
   is_admin: boolean;
   is_banned: boolean;
   created_at: string;
@@ -74,6 +75,24 @@ export interface Achievement {
 export interface AchievementsResponse {
   achievements: Achievement[];
   total_luck: number;
+}
+
+export interface ProfileFrame {
+  key: string;
+  title: string;
+  description: string;
+  price: number | null;
+  achievement: string | null;
+  primary: string;
+  secondary: string;
+  owned: boolean;
+  equipped: boolean;
+}
+
+export interface FramesResponse {
+  frames: ProfileFrame[];
+  equipped: string;
+  balance: number;
 }
 
 export interface TaskClaimResult {
@@ -249,6 +268,7 @@ export interface LeaderboardEntry {
   avatar_url: string | null;
   score: number;
   domains_count: number;
+  frame_key: string;
   level: number;
   is_me: boolean;
 }

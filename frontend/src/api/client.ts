@@ -12,6 +12,7 @@ import type {
   Domain,
   DropsResponse,
   EarnResult,
+  FramesResponse,
   InventoryItem,
   KeepResult,
   LeaderboardResponse,
@@ -185,6 +186,18 @@ export const api = {
   tasks: () => request<DailyTasksResponse>('/tasks'),
 
   achievements: () => request<AchievementsResponse>('/achievements'),
+
+  frames: () => request<FramesResponse>('/frames'),
+
+  buyFrame: (key: string) =>
+    request<FramesResponse>(`/frames/${encodeURIComponent(key)}/buy`, {
+      method: 'POST',
+    }),
+
+  equipFrame: (key: string) =>
+    request<FramesResponse>(`/frames/${encodeURIComponent(key)}/equip`, {
+      method: 'POST',
+    }),
 
   claimTask: (key: string) =>
     request<TaskClaimResult>(`/tasks/${encodeURIComponent(key)}/claim`, {

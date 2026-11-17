@@ -22,6 +22,7 @@ from app.routers import (
     auth,
     domains,
     earnings,
+    frames,
     inventory,
     leaderboard,
     settings as settings_router,
@@ -134,6 +135,7 @@ async def test_context(monkeypatch):
         upgrades.router,
         tasks.router,
         achievements.router,
+        frames.router,
     ):
         app.include_router(router, prefix="/api")
     app.dependency_overrides[get_db] = override_db
@@ -474,7 +476,7 @@ async def test_daily_tasks_and_player_stats(test_context):
 
     achievements = await client.get("/api/achievements", headers=headers)
     assert achievements.status_code == 200, achievements.text
-    assert len(achievements.json()["achievements"]) == 13
+    assert len(achievements.json()["achievements"]) == 20
     assert achievements.json()["total_luck"] == 0
 
     me = await client.get("/api/me", headers=headers)
@@ -484,6 +486,29 @@ async def test_daily_tasks_and_player_stats(test_context):
     assert stats["total_spent"] == 0
     assert stats["mythic_drops"] == 0
     assert stats["upgrades_total"] == 0
+
+
+async def test_profile_frames_buy_and_equip(test_context):
+    client, _Session, _fake = test_context
+    _payload, headers = await _auth(client)
+
+    frames = await client.get("/api/frames", headers=headers)
+    assert frames.status_code == 200, frames.text
+    assert frames.json()["equipped"] == "default"
+    assert len(frames.json()["frames"]) == 9
+
+    bought = await client.post("/api/frames/ocean/buy", headers=headers)
+    assert bought.status_code == 200, bought.text
+    assert bought.json()["balance"] == 500
+    ocean = next(frame for frame in bought.json()["frames"] if frame["key"] == "ocean")
+    assert ocean["owned"] is True
+
+    equipped = await client.post("/api/frames/ocean/equip", headers=headers)
+    assert equipped.status_code == 200, equipped.text
+    assert equipped.json()["equipped"] == "ocean"
+
+    me = await client.get("/api/me", headers=headers)
+    assert me.json()["user"]["frame_key"] == "ocean"
 
 
 async def test_daily_bonus_is_25_percent_of_balance(test_context):

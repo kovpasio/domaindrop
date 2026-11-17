@@ -25,6 +25,7 @@ import type { DailyTask } from '@/types';
 import {
   cn,
   countdown,
+  countdownHours,
   formatNumber,
   hapticImpact,
   hapticNotify,
@@ -115,7 +116,7 @@ export function ProfilePage() {
     <div className="space-y-4">
       <section className="rounded-2xl border border-white/[0.07] bg-ink-800 p-4 shadow-soft">
         <div className="flex items-start gap-3.5">
-          <Avatar src={user.avatar_url} name={user.display_name} size={68} />
+          <Avatar src={user.avatar_url} name={user.display_name} size={68} frame={user.frame_key} />
           <div className="min-w-0 flex-1 pt-0.5">
             <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
               <span className="rounded-md border border-accent/25 bg-accent/10 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.12em] text-accent-soft">
@@ -246,7 +247,7 @@ export function ProfilePage() {
           </div>
           <span className="text-[8px] text-muted/60">
             {tasks.filter((task) => task.claimed).length} / {tasks.length} · сброс через{' '}
-            {tasksResetAt ? countdown(tasksResetAt) : '—'} МСК
+            {tasksResetAt ? countdownHours(tasksResetAt) : '—'}
           </span>
         </div>
         <div className="mt-3 space-y-2">
