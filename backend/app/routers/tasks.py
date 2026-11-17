@@ -12,19 +12,21 @@ from app.services.tasks import (
     TASKS_BY_KEY,
     claimed_task_keys,
     daily_metrics,
+    game_day,
+    next_reset,
     task_payload,
-    utc_day,
 )
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 
 async def _tasks_for_user(db: AsyncSession, user_id: int) -> DailyTasksOut:
-    day = utc_day()
+    day = game_day()
     metrics = await daily_metrics(db, user_id, day)
     claimed = await claimed_task_keys(db, user_id, day)
     return DailyTasksOut(
         day=day.isoformat(),
+        reset_at=next_reset(day),
         tasks=[DailyTaskOut(**task) for task in task_payload(metrics, claimed)],
     )
 
@@ -56,7 +58,7 @@ async def claim_task(
     if locked is None:
         raise HTTPException(status_code=401, detail="Пользователь не найден")
 
-    day = utc_day()
+    day = game_day()
     claimed = await claimed_task_keys(db, locked.id, day)
     if task_key in claimed:
         raise HTTPException(status_code=409, detail="Награда уже получена")

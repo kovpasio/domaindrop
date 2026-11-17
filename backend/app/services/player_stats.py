@@ -41,6 +41,19 @@ async def player_stats(db: AsyncSession, user_id: int) -> dict[str, int]:
         )
         or 0
     )
+    sales_count = int(
+        await db.scalar(
+            select(func.count())
+            .select_from(Inventory)
+            .where(
+                Inventory.user_id == user_id,
+                Inventory.sold_at.is_not(None),
+                Inventory.sold_price.is_not(None),
+                Inventory.sold_price > 0,
+            )
+        )
+        or 0
+    )
     best_drop = int(
         await db.scalar(select(func.coalesce(func.max(Spin.price), 0)).where(Spin.user_id == user_id))
         or 0
@@ -90,6 +103,7 @@ async def player_stats(db: AsyncSession, user_id: int) -> dict[str, int]:
 
     return {
         "total_earned": sold + auto_sold,
+        "sales_count": sales_count,
         "total_spent": total_spent,
         "best_drop": best_drop,
         "biggest_sale": biggest_sale,

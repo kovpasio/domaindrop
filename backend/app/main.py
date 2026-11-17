@@ -12,6 +12,7 @@ from sqlalchemy import text
 from app.config import settings
 from app.database import SessionLocal, close_db, init_db
 from app.routers import (
+    achievements,
     admin,
     auth,
     domains,
@@ -88,6 +89,7 @@ app.include_router(earnings.router, prefix=api_prefix)
 app.include_router(settings_router.router, prefix=api_prefix)
 app.include_router(upgrades.router, prefix=api_prefix)
 app.include_router(tasks.router, prefix=api_prefix)
+app.include_router(achievements.router, prefix=api_prefix)
 
 
 @app.get("/api/health", response_model=HealthOut, tags=["system"])

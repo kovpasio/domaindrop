@@ -37,7 +37,7 @@ INVENTORY_LUCK = {
     "mythic": 1.00,
 }
 INVENTORY_LUCK_CAP = 5.0
-TOTAL_LUCK_CAP = 30.0
+TOTAL_LUCK_CAP = 40.0
 
 
 @dataclass(frozen=True)
@@ -50,6 +50,7 @@ class LuckProfile:
     spins_to_next: int | None
     level_luck: float
     inventory_luck: float
+    achievement_luck: float
     total_luck: float
 
 
@@ -66,7 +67,11 @@ def inventory_luck(counts: dict[str, int]) -> float:
     return min(INVENTORY_LUCK_CAP, value)
 
 
-def luck_profile(total_spins: int, inventory_counts: dict[str, int]) -> LuckProfile:
+def luck_profile(
+    total_spins: int,
+    inventory_counts: dict[str, int],
+    achievement_luck: float = 0.0,
+) -> LuckProfile:
     index = level_index(total_spins)
     threshold, title = LEVELS[index]
     next_threshold = LEVELS[index + 1][0] if index + 1 < len(LEVELS) else None
@@ -75,7 +80,8 @@ def luck_profile(total_spins: int, inventory_counts: dict[str, int]) -> LuckProf
     if index == len(LEVELS) - 1:
         level_luck += LEVEL_LUCK_STEP
     inv_luck = inventory_luck(inventory_counts)
-    total_luck = min(TOTAL_LUCK_CAP, level_luck + inv_luck)
+    achievement_luck = max(0.0, float(achievement_luck))
+    total_luck = min(TOTAL_LUCK_CAP, level_luck + inv_luck + achievement_luck)
     return LuckProfile(
         level=index + 1,
         title=title,
@@ -87,6 +93,7 @@ def luck_profile(total_spins: int, inventory_counts: dict[str, int]) -> LuckProf
         ),
         level_luck=round(level_luck, 2),
         inventory_luck=round(inv_luck, 2),
+        achievement_luck=round(achievement_luck, 2),
         total_luck=round(total_luck, 2),
     )
 

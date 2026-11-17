@@ -3,6 +3,7 @@ import type {
   AdminOverview,
   AdminUser,
   AdminUsersResponse,
+  AchievementsResponse,
   AuthResponse,
   AutosellSettings,
   BulkSellResult,
@@ -182,6 +183,8 @@ export const api = {
     request<DailyBonusResponse>('/daily-bonus', { method: 'POST' }),
 
   tasks: () => request<DailyTasksResponse>('/tasks'),
+
+  achievements: () => request<AchievementsResponse>('/achievements'),
 
   claimTask: (key: string) =>
     request<TaskClaimResult>(`/tasks/${encodeURIComponent(key)}/claim`, {

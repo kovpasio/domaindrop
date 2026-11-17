@@ -38,13 +38,23 @@ TASKS: tuple[dict, ...] = (
 TASKS_BY_KEY = {task["key"]: task for task in TASKS}
 
 
-def utc_day(now: datetime | None = None) -> date:
-    return (now or datetime.now(timezone.utc)).astimezone(timezone.utc).date()
+MOSCOW_TZ = timezone(timedelta(hours=3), "MSK")
+
+
+def game_day(now: datetime | None = None) -> date:
+    return (now or datetime.now(timezone.utc)).astimezone(MOSCOW_TZ).date()
 
 
 def day_bounds(day: date) -> tuple[datetime, datetime]:
-    start = datetime.combine(day, time.min, tzinfo=timezone.utc)
-    return start, start + timedelta(days=1)
+    start_local = datetime.combine(day, time.min, tzinfo=MOSCOW_TZ)
+    end_local = start_local + timedelta(days=1)
+    return start_local.astimezone(timezone.utc), end_local.astimezone(timezone.utc)
+
+
+def next_reset(day: date) -> datetime:
+    """Next 00:00 Moscow time, expressed in UTC."""
+    end_local = datetime.combine(day, time.min, tzinfo=MOSCOW_TZ) + timedelta(days=1)
+    return end_local.astimezone(timezone.utc)
 
 
 async def daily_metrics(db: AsyncSession, user_id: int, day: date) -> dict[str, int]:

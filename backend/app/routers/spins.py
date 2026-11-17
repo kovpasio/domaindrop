@@ -19,7 +19,9 @@ from app.security import get_current_user
 from app.services.autosell import get_or_create_settings, should_autosell
 from app.services.realtime import publish_drop
 from app.services.redis_client import redis_client
+from app.services.achievements import achievement_payload
 from app.services.luck import apply_luck, luck_profile
+from app.services.player_stats import player_stats
 from app.services.roulette import choose_rarity, random_domain_in_rarity
 from app.services.stats import collection_breakdown
 
@@ -93,7 +95,19 @@ async def spin(
             )
 
         inventory_counts = await collection_breakdown(db, locked_user.id)
-        progress = luck_profile(locked_user.total_spins, inventory_counts)
+        stats = await player_stats(db, locked_user.id)
+        _achievements, achievement_luck = achievement_payload(
+            {
+                **stats,
+                "spins": locked_user.total_spins,
+                "collection": sum(inventory_counts.values()),
+            }
+        )
+        progress = luck_profile(
+            locked_user.total_spins,
+            inventory_counts,
+            achievement_luck,
+        )
         chances = apply_luck(roll["rarity_chances"], progress.total_luck)
         autosell = await get_or_create_settings(db, locked_user.id)
 

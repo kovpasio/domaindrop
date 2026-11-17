@@ -57,7 +57,23 @@ export interface DailyTask {
 
 export interface DailyTasksResponse {
   day: string;
+  reset_at: string;
   tasks: DailyTask[];
+}
+
+export interface Achievement {
+  key: string;
+  title: string;
+  description: string;
+  target: number;
+  progress: number;
+  unlocked: boolean;
+  luck: number;
+}
+
+export interface AchievementsResponse {
+  achievements: Achievement[];
+  total_luck: number;
 }
 
 export interface TaskClaimResult {
@@ -75,6 +91,7 @@ export interface LuckProgress {
   spins_to_next: number | null;
   level_luck: number;
   inventory_luck: number;
+  achievement_luck: number;
   total_luck: number;
 }
 

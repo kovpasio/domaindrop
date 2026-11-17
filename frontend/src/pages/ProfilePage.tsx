@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowUpFromLine,
-  BarChart3,
   Check,
   ChevronRight,
   Coins,
@@ -12,7 +11,6 @@ import {
   Settings2,
   Sparkles,
   Target,
-  TrendingUp,
   Trophy,
 } from 'lucide-react';
 import { ApiError, api } from '@/api/client';
@@ -41,6 +39,7 @@ export function ProfilePage() {
   const { playCoin } = useSound();
   const [claiming, setClaiming] = useState(false);
   const [tasks, setTasks] = useState<DailyTask[]>([]);
+  const [tasksResetAt, setTasksResetAt] = useState<string | null>(null);
   const [claimingTask, setClaimingTask] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
 
@@ -52,7 +51,10 @@ export function ProfilePage() {
   useEffect(() => {
     void api
       .tasks()
-      .then((response) => setTasks(response.tasks))
+      .then((response) => {
+        setTasks(response.tasks);
+        setTasksResetAt(response.reset_at);
+      })
       .catch(() => undefined);
   }, []);
 
@@ -68,6 +70,7 @@ export function ProfilePage() {
       toast(`Награда за задание: +${formatNumber(result.amount)} D`, 'success');
       const response = await api.tasks();
       setTasks(response.tasks);
+      setTasksResetAt(response.reset_at);
       await refresh();
     } catch (error) {
       toast(error instanceof ApiError ? error.message : 'Не удалось получить награду', 'error');
@@ -211,23 +214,28 @@ export function ProfilePage() {
           </span>
         </div>
 
-        <div className="mt-3 grid grid-cols-2 gap-2 border-t border-white/[0.06] pt-3">
+        <div className="mt-3 grid grid-cols-3 gap-2 border-t border-white/[0.06] pt-3">
           <div>
             <div className="text-[7px] uppercase tracking-[0.1em] text-muted/60">за спины</div>
             <div className="mt-0.5 font-display text-[11px] font-semibold text-paper">
-              +{progress.level_luck.toFixed(1)}% удачи
+              +{progress.level_luck.toFixed(1)}%
             </div>
           </div>
           <div>
             <div className="text-[7px] uppercase tracking-[0.1em] text-muted/60">за инвентарь</div>
             <div className="mt-0.5 font-display text-[11px] font-semibold text-paper">
-              +{progress.inventory_luck.toFixed(1)}% удачи
+              +{progress.inventory_luck.toFixed(1)}%
+            </div>
+          </div>
+          <div>
+            <div className="text-[7px] uppercase tracking-[0.1em] text-muted/60">за достижения</div>
+            <div className="mt-0.5 font-display text-[11px] font-semibold text-paper">
+              +{progress.achievement_luck.toFixed(1)}%
             </div>
           </div>
         </div>
         <p className="mt-2 text-[8px] leading-relaxed text-muted/50">
-          Удача сдвигает шансы в сторону Rare+. Домены в инвентаре усиливают бонус, пока вы их не
-          продали.
+          Удача сдвигает шансы в сторону Rare+. Суммарный бонус ограничен +40%.
         </p>
       </section>
 
@@ -237,7 +245,8 @@ export function ProfilePage() {
             <Target size={13} className="text-accent-soft" /> Ежедневные задания
           </div>
           <span className="text-[8px] text-muted/60">
-            {tasks.filter((task) => task.claimed).length} / {tasks.length}
+            {tasks.filter((task) => task.claimed).length} / {tasks.length} · сброс через{' '}
+            {tasksResetAt ? countdown(tasksResetAt) : '—'} МСК
           </span>
         </div>
         <div className="mt-3 space-y-2">
@@ -299,36 +308,6 @@ export function ProfilePage() {
               );
             })
           )}
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-white/[0.06] bg-ink-800 p-4">
-        <div className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold text-paper">
-          <BarChart3 size={13} className="text-accent-soft" /> Статистика
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          {[
-            { label: 'Всего спинов', value: formatNumber(user.total_spins), accent: 'text-paper' },
-            { label: 'Заработано', value: `${formatNumber(stats.total_earned)} D`, accent: 'text-teal' },
-            { label: 'Потрачено', value: `${formatNumber(stats.total_spent)} D`, accent: 'text-gold' },
-            { label: 'Лучший дроп', value: `${formatNumber(stats.best_drop)} D`, accent: 'text-rarity-legendary' },
-            { label: 'Mythic-дропы', value: formatNumber(stats.mythic_drops), accent: 'text-rarity-mythic' },
-            {
-              label: 'Апгрейды',
-              value: `${formatNumber(stats.upgrades_success)} / ${formatNumber(stats.upgrades_total)}`,
-              accent: 'text-accent-soft',
-            },
-          ].map((item) => (
-            <div key={item.label} className="rounded-xl border border-white/[0.05] bg-ink-900/60 px-3 py-2.5">
-              <div className="text-[7px] uppercase tracking-[0.1em] text-muted/50">{item.label}</div>
-              <div className={cn('mt-1 truncate font-display text-[13px] font-semibold', item.accent)}>
-                {item.value}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="mt-2 flex items-center gap-1 text-[8px] text-muted/45">
-          <TrendingUp size={10} /> Крупнейшая продажа: {formatNumber(stats.biggest_sale)} D
         </div>
       </section>
 

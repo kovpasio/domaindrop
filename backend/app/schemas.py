@@ -95,6 +95,7 @@ class DailyTaskOut(BaseModel):
 
 class DailyTasksOut(BaseModel):
     day: str
+    reset_at: datetime
     tasks: list[DailyTaskOut]
 
 
@@ -102,6 +103,21 @@ class TaskClaimOut(BaseModel):
     key: str
     amount: int
     balance: int
+
+
+class AchievementOut(BaseModel):
+    key: str
+    title: str
+    description: str
+    target: int
+    progress: int
+    unlocked: bool
+    luck: float
+
+
+class AchievementsOut(BaseModel):
+    achievements: list[AchievementOut]
+    total_luck: float
 
 
 class LuckProgressOut(BaseModel):
@@ -113,6 +129,7 @@ class LuckProgressOut(BaseModel):
     spins_to_next: int | None
     level_luck: float
     inventory_luck: float
+    achievement_luck: float
     total_luck: float
 
 

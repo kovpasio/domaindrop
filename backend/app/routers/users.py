@@ -12,6 +12,7 @@ from app.economy import daily_bonus_for
 from app.models import User
 from app.schemas import DailyBonusOut, LuckProgressOut, MeOut, MeStats, UserOut
 from app.security import get_current_user
+from app.services.achievements import achievement_payload
 from app.services.luck import luck_profile
 from app.services.player_stats import player_stats
 from app.services.stats import (
@@ -45,7 +46,13 @@ async def build_me(db: AsyncSession, user: User) -> MeOut:
         else None
     )
     can_daily = next_bonus is None or now >= next_bonus
-    progress = luck_profile(user.total_spins, by_rarity)
+    achievement_stats = {
+        **stats,
+        "spins": user.total_spins,
+        "collection": collection_count,
+    }
+    _achievements, achievement_luck = achievement_payload(achievement_stats)
+    progress = luck_profile(user.total_spins, by_rarity, achievement_luck)
     return MeOut(
         user=UserOut.model_validate(user),
         progress=LuckProgressOut(
@@ -57,6 +64,7 @@ async def build_me(db: AsyncSession, user: User) -> MeOut:
             spins_to_next=progress.spins_to_next,
             level_luck=progress.level_luck,
             inventory_luck=progress.inventory_luck,
+            achievement_luck=progress.achievement_luck,
             total_luck=progress.total_luck,
         ),
         stats=MeStats(

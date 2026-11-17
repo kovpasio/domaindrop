@@ -17,6 +17,7 @@ from app.economy import weight_for
 from app.models import Base, Domain, Inventory, User
 from app.services.stats import leaderboard as get_leaderboard
 from app.routers import (
+    achievements,
     admin,
     auth,
     domains,
@@ -132,6 +133,7 @@ async def test_context(monkeypatch):
         settings_router.router,
         upgrades.router,
         tasks.router,
+        achievements.router,
     ):
         app.include_router(router, prefix="/api")
     app.dependency_overrides[get_db] = override_db
@@ -469,6 +471,11 @@ async def test_daily_tasks_and_player_stats(test_context):
 
     incomplete = await client.post("/api/tasks/spins_10/claim", headers=headers)
     assert incomplete.status_code == 409
+
+    achievements = await client.get("/api/achievements", headers=headers)
+    assert achievements.status_code == 200, achievements.text
+    assert len(achievements.json()["achievements"]) == 13
+    assert achievements.json()["total_luck"] == 0
 
     me = await client.get("/api/me", headers=headers)
     assert me.status_code == 200
