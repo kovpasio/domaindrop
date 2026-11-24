@@ -5,21 +5,21 @@ export default {
     extend: {
       colors: {
         ink: {
-          950: '#0C121C',
-          900: '#111A27',
-          800: '#182334',
-          700: '#223146',
-          600: '#2E4058',
+          950: 'rgb(var(--ink-950) / <alpha-value>)',
+          900: 'rgb(var(--ink-900) / <alpha-value>)',
+          800: 'rgb(var(--ink-800) / <alpha-value>)',
+          700: 'rgb(var(--ink-700) / <alpha-value>)',
+          600: 'rgb(var(--ink-600) / <alpha-value>)',
         },
         accent: {
-          DEFAULT: '#4F9DFF',
-          soft: '#8DC2FF',
-          deep: '#2B6CCB',
+          DEFAULT: 'rgb(var(--accent) / <alpha-value>)',
+          soft: 'rgb(var(--accent-soft) / <alpha-value>)',
+          deep: 'rgb(var(--accent-deep) / <alpha-value>)',
         },
         neon: {
-          lime: '#4F9DFF',
-          cyan: '#43D6C5',
-          violet: '#B27CFF',
+          lime: 'rgb(var(--accent) / <alpha-value>)',
+          cyan: 'rgb(var(--teal) / <alpha-value>)',
+          violet: 'rgb(var(--violet) / <alpha-value>)',
         },
         rarity: {
           common: '#96A3B8',
@@ -28,10 +28,10 @@ export default {
           legendary: '#F2A54A',
           mythic: '#F06473',
         },
-        gold: '#F2A54A',
-        teal: '#43D6C5',
-        paper: '#F1F5FB',
-        muted: '#A1AEC2',
+        gold: 'rgb(var(--gold) / <alpha-value>)',
+        teal: 'rgb(var(--teal) / <alpha-value>)',
+        paper: 'rgb(var(--paper) / <alpha-value>)',
+        muted: 'rgb(var(--muted) / <alpha-value>)',
       },
       fontFamily: {
         sans: ['Manrope Variable', 'Manrope', 'system-ui', 'sans-serif'],

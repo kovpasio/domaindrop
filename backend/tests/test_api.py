@@ -28,6 +28,7 @@ from app.routers import (
     settings as settings_router,
     spins,
     tasks,
+    theme,
     upgrades,
     users,
 )
@@ -136,6 +137,7 @@ async def test_context(monkeypatch):
         tasks.router,
         achievements.router,
         frames.router,
+        theme.router,
     ):
         app.include_router(router, prefix="/api")
     app.dependency_overrides[get_db] = override_db
@@ -505,6 +507,26 @@ async def test_pity_forces_mythic_and_resets_counter(test_context):
 
     me = await client.get("/api/me", headers=headers)
     assert me.json()["stats"]["pity_counter"] == 0
+
+
+async def test_theme_can_be_saved_and_is_returned_in_profile(test_context):
+    client, _Session, _fake = test_context
+    _payload, headers = await _auth(client)
+
+    current = await client.get("/api/theme", headers=headers)
+    assert current.status_code == 200
+    assert current.json()["theme_key"] == "midnight"
+
+    saved = await client.put(
+        "/api/theme",
+        headers=headers,
+        json={"theme_key": "ocean", "accent_color": None},
+    )
+    assert saved.status_code == 200, saved.text
+    assert saved.json()["theme_key"] == "ocean"
+
+    me = await client.get("/api/me", headers=headers)
+    assert me.json()["user"]["theme_key"] == "ocean"
 
 
 async def test_profile_frames_buy_and_equip(test_context):

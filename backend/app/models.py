@@ -60,6 +60,10 @@ class User(Base):
     frame_key: Mapped[str] = mapped_column(
         String(32), nullable=False, default="default", server_default="default"
     )
+    theme_key: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="midnight", server_default="midnight"
+    )
+    theme_accent: Mapped[str | None] = mapped_column(String(16), nullable=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
     is_banned: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
     ban_reason: Mapped[str | None] = mapped_column(String(256), nullable=True)

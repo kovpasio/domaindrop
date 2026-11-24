@@ -24,6 +24,7 @@ from app.routers import (
     settings as settings_router,
     spins,
     tasks,
+    theme,
     upgrades,
     users,
 )
@@ -92,6 +93,7 @@ app.include_router(upgrades.router, prefix=api_prefix)
 app.include_router(tasks.router, prefix=api_prefix)
 app.include_router(achievements.router, prefix=api_prefix)
 app.include_router(frames.router, prefix=api_prefix)
+app.include_router(theme.router, prefix=api_prefix)
 
 
 @app.get("/api/health", response_model=HealthOut, tags=["system"])

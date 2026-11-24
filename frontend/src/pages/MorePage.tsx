@@ -42,6 +42,13 @@ const LINKS = [
     color: '#B07CFF',
   },
   {
+    to: '/themes',
+    label: 'Темы',
+    description: 'Цвета и оформление приложения',
+    icon: Sparkles,
+    color: '#FF965C',
+  },
+  {
     to: '/drops',
     label: 'Лента дропов',
     description: 'Последние 20 выпадений в реальном времени',

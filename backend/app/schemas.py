@@ -25,6 +25,8 @@ class UserOut(BaseModel):
     balance: int
     total_spins: int
     frame_key: str
+    theme_key: str
+    theme_accent: str | None
     is_admin: bool
     is_banned: bool
     created_at: datetime
@@ -121,6 +123,16 @@ class AchievementOut(BaseModel):
 class AchievementsOut(BaseModel):
     achievements: list[AchievementOut]
     total_luck: float
+
+
+class ThemeOut(BaseModel):
+    theme_key: str
+    accent_color: str | None
+
+
+class ThemeIn(BaseModel):
+    theme_key: str
+    accent_color: str | None = None
 
 
 class FrameOut(BaseModel):

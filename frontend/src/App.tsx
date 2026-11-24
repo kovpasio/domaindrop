@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { RefreshCw, WifiOff } from 'lucide-react';
@@ -17,10 +18,16 @@ import { MorePage } from '@/pages/MorePage';
 import { StatisticsPage } from '@/pages/StatisticsPage';
 import { AchievementsPage } from '@/pages/AchievementsPage';
 import { FramesPage } from '@/pages/FramesPage';
+import { ThemesPage } from '@/pages/ThemesPage';
+import { applyTheme } from '@/lib/themes';
 
 export default function App() {
   const { loading, error, me, retry } = useAuth();
   useTelegram();
+
+  useEffect(() => {
+    applyTheme(me?.user.theme_key, me?.user.theme_accent);
+  }, [me?.user.theme_key, me?.user.theme_accent]);
 
   if (loading) return <Splash />;
 
@@ -67,6 +74,7 @@ export default function App() {
         <Route path="/statistics" element={<StatisticsPage />} />
         <Route path="/achievements" element={<AchievementsPage />} />
         <Route path="/frames" element={<FramesPage />} />
+        <Route path="/themes" element={<ThemesPage />} />
         <Route path="/admin" element={<AdminPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

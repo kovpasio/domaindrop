@@ -11,6 +11,8 @@ export interface User {
   balance: number;
   total_spins: number;
   frame_key: string;
+  theme_key: string;
+  theme_accent: string | null;
   is_admin: boolean;
   is_banned: boolean;
   created_at: string;
@@ -95,6 +97,11 @@ export interface FramesResponse {
   frames: ProfileFrame[];
   equipped: string;
   balance: number;
+}
+
+export interface ThemeResponse {
+  theme_key: string;
+  accent_color: string | null;
 }
 
 export interface TaskClaimResult {

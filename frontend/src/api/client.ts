@@ -24,6 +24,7 @@ import type {
   SpinBatchResult,
   SpinResult,
   TaskClaimResult,
+  ThemeResponse,
   UpgradePreview,
   UpgradeResult,
 } from '@/types';
@@ -197,6 +198,14 @@ export const api = {
   equipFrame: (key: string) =>
     request<FramesResponse>(`/frames/${encodeURIComponent(key)}/equip`, {
       method: 'POST',
+    }),
+
+  theme: () => request<ThemeResponse>('/theme'),
+
+  updateTheme: (themeKey: string, accentColor: string | null) =>
+    request<ThemeResponse>('/theme', {
+      method: 'PUT',
+      body: JSON.stringify({ theme_key: themeKey, accent_color: accentColor }),
     }),
 
   claimTask: (key: string) =>
