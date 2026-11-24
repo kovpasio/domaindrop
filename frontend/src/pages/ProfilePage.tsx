@@ -218,7 +218,7 @@ export function ProfilePage() {
           </span>
         </div>
 
-        <div className="mt-3 grid grid-cols-3 gap-2 border-t border-white/[0.06] pt-3">
+        <div className="mt-3 grid grid-cols-4 gap-2 border-t border-white/[0.06] pt-3">
           <div>
             <div className="text-[7px] uppercase tracking-[0.1em] text-muted/60">за спины</div>
             <div className="mt-0.5 font-display text-[11px] font-semibold text-paper">
@@ -235,6 +235,12 @@ export function ProfilePage() {
             <div className="text-[7px] uppercase tracking-[0.1em] text-muted/60">за достижения</div>
             <div className="mt-0.5 font-display text-[11px] font-semibold text-paper">
               +{progress.achievement_luck.toFixed(1)}%
+            </div>
+          </div>
+          <div>
+            <div className="text-[7px] uppercase tracking-[0.1em] text-muted/60">за бустер</div>
+            <div className="mt-0.5 font-display text-[11px] font-semibold text-teal">
+              +{progress.boost_luck.toFixed(1)}%
             </div>
           </div>
         </div>
@@ -369,7 +375,7 @@ export function ProfilePage() {
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <span className="font-display text-[12px] font-semibold text-paper">
-                Ежедневный бонус · 25%
+                Ежедневный бонус · 25% / от 500 D
               </span>
               {dailyReady && (
                 <span className="rounded bg-rarity-legendary/15 px-1.5 py-0.5 text-[7px] font-bold uppercase tracking-wider text-rarity-legendary">

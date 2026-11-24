@@ -41,11 +41,11 @@ def test_weight_applies_rarity_luck():
     assert weight_for(1, "common") == 2.5
 
 
-def test_daily_bonus_is_25_percent_with_cap():
+def test_daily_bonus_is_25_percent_with_cap_and_minimum():
     assert daily_bonus_for(2_000) == 500
     assert daily_bonus_for(4_000) == 1_000
     assert daily_bonus_for(100_000_000) == 1_000_000
-    assert daily_bonus_for(0) == 0
+    assert daily_bonus_for(0) == 500
 
 
 def test_upgrade_target_uses_inverse_chance():

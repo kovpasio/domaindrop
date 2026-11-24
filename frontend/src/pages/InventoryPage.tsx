@@ -25,7 +25,8 @@ import { BottomSheet } from '@/components/BottomSheet';
 import { EmptyState } from '@/components/EmptyState';
 import { PageTitle } from '@/components/PageTitle';
 import { RarityBadge } from '@/components/RarityBadge';
-import type { InventoryItem, ProfileFrame, Rarity, Zone } from '@/types';
+import type { Booster, InventoryItem, ProfileFrame, Rarity, ThemeItem, Zone } from '@/types';
+import { applyTheme } from '@/lib/themes';
 import {
   cn,
   formatNumber,
@@ -496,39 +497,126 @@ export function InventoryPage() {
 }
 
 function CosmeticsPanel() {
-  const { me } = useAuth();
+  const { me, refresh, applyBalance } = useAuth();
+  const { toast } = useToast();
+  const [kind, setKind] = useState<'frames' | 'themes'>('frames');
   const [frames, setFrames] = useState<ProfileFrame[] | null>(null);
+  const [themes, setThemes] = useState<ThemeItem[] | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
 
   useEffect(() => {
-    void api
-      .frames()
-      .then((data) => setFrames(data.frames))
-      .catch(() => setFrames([]));
+    void Promise.all([api.frames(), api.themes()])
+      .then(([frameData, themeData]) => {
+        setFrames(frameData.frames);
+        setThemes(themeData.themes);
+      })
+      .catch(() => {
+        setFrames([]);
+        setThemes([]);
+      });
   }, []);
 
-  const sorted = [...(frames ?? [])].sort(
+  const sortedFrames = [...(frames ?? [])].sort(
     (a, b) => Number(b.owned) - Number(a.owned) || a.title.localeCompare(b.title),
   );
-  const ownedCount = sorted.filter((frame) => frame.owned).length;
+  const sortedThemes = [...(themes ?? [])].sort(
+    (a, b) => Number(b.owned) - Number(a.owned) || a.title.localeCompare(b.title),
+  );
+  const current = kind === 'frames' ? sortedFrames : sortedThemes;
+  const ownedCount = current.filter((item) => item.owned).length;
+
+  async function equipFrame(key: string) {
+    if (busy) return;
+    setBusy(key);
+    try {
+      const data = await api.equipFrame(key);
+      setFrames(data.frames);
+      hapticImpact('light');
+      toast('Рамка установлена', 'success');
+      await refresh();
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Не удалось надеть рамку', 'error');
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function buyFrame(key: string) {
+    if (busy) return;
+    setBusy(key);
+    try {
+      const data = await api.buyFrame(key);
+      setFrames(data.frames);
+      applyBalance(data.balance);
+      hapticImpact('light');
+      toast('Рамка куплена', 'success');
+      await refresh();
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Не удалось купить рамку', 'error');
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function equipTheme(key: string) {
+    if (busy) return;
+    setBusy(key);
+    try {
+      const data = await api.equipTheme(key);
+      setThemes(data.themes);
+      applyTheme(key, null);
+      hapticImpact('light');
+      toast('Тема применена', 'success');
+      await refresh();
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Не удалось применить тему', 'error');
+    } finally {
+      setBusy(null);
+    }
+  }
 
   return (
     <div>
       <div className="mb-3 flex items-center justify-between rounded-2xl border border-rarity-epic/20 bg-rarity-epic/[0.06] px-4 py-3">
         <div>
-          <div className="text-[10px] font-semibold text-paper">Косметика профиля</div>
-          <div className="mt-0.5 text-[8px] text-muted/60">Рамки, открытые и купленные</div>
+          <div className="text-[10px] font-semibold text-paper">Косметика</div>
+          <div className="mt-0.5 text-[8px] text-muted/60">
+            {kind === 'frames' ? 'Рамки профиля' : 'Темы приложения'}
+          </div>
         </div>
         <div className="font-display text-2xl font-semibold text-rarity-epic">
           {ownedCount}
-          <span className="ml-0.5 text-[10px] text-muted/40">/ {sorted.length}</span>
+          <span className="ml-0.5 text-[10px] text-muted/40">/ {current.length}</span>
         </div>
       </div>
 
+      <div className="mb-3 grid grid-cols-2 gap-1 rounded-xl border border-white/[0.06] bg-ink-800 p-1">
+        {[
+          { key: 'frames', label: 'Рамки' },
+          { key: 'themes', label: 'Темы' },
+        ].map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            onClick={() => {
+              setKind(item.key as 'frames' | 'themes');
+              hapticImpact('light');
+            }}
+            className={cn(
+              'rounded-lg py-2 text-[9px] font-semibold transition',
+              kind === item.key ? 'bg-accent/15 text-accent-soft' : 'text-muted/55',
+            )}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+
       <div className="space-y-2">
-        {frames === null ? (
+        {(kind === 'frames' ? frames : themes) === null ? (
           <div className="h-24 animate-pulse rounded-2xl border border-white/[0.04] bg-white/[0.02]" />
-        ) : (
-          sorted.map((frame) => (
+        ) : kind === 'frames' ? (
+          sortedFrames.map((frame) => (
             <div
               key={frame.key}
               className={cn(
@@ -538,61 +626,141 @@ function CosmeticsPanel() {
                   : 'border-white/[0.04] bg-ink-800/45 opacity-60',
               )}
             >
-              <Avatar
-                name={me?.user.display_name ?? 'Domain Drop'}
-                size={42}
-                frame={frame.key}
-              />
+              <Avatar name={me?.user.display_name ?? 'Domain Drop'} size={42} frame={frame.key} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   <span className="text-[11px] font-semibold text-paper">{frame.title}</span>
                   {!frame.owned && <span className="text-[8px] text-muted/40">🔒</span>}
                 </div>
-                <div className="mt-0.5 truncate text-[8px] text-muted/55">
-                  {frame.description}
-                </div>
+                <div className="mt-0.5 truncate text-[8px] text-muted/55">{frame.description}</div>
               </div>
-              <span
-                className={cn(
-                  'rounded-md border px-1.5 py-1 text-[7px] font-semibold',
-                  frame.equipped
-                    ? 'border-teal/25 bg-teal/10 text-teal'
-                    : frame.owned
-                      ? 'border-white/[0.06] text-muted/45'
+              {frame.owned && !frame.equipped ? (
+                <button
+                  type="button"
+                  disabled={busy !== null}
+                  onClick={() => void equipFrame(frame.key)}
+                  className="rounded-lg border border-accent/30 bg-accent/10 px-2 py-1.5 text-[7px] font-semibold text-accent-soft"
+                >
+                  {busy === frame.key ? '…' : 'Надеть'}
+                </button>
+              ) : !frame.owned && frame.price !== null && frame.price > 0 ? (
+                <button
+                  type="button"
+                  disabled={busy !== null}
+                  onClick={() => void buyFrame(frame.key)}
+                  className="rounded-lg border border-gold/25 bg-gold/10 px-2 py-1.5 text-[7px] font-semibold text-gold"
+                >
+                  {busy === frame.key ? '…' : `${formatNumber(frame.price)} D`}
+                </button>
+              ) : (
+                <span
+                  className={cn(
+                    'rounded-md border px-1.5 py-1 text-[7px] font-semibold',
+                    frame.equipped
+                      ? 'border-teal/25 bg-teal/10 text-teal'
                       : 'border-gold/15 text-gold/60',
-                )}
-              >
-                {frame.equipped
-                  ? 'на аватаре'
-                  : frame.owned
-                    ? 'в коллекции'
+                  )}
+                >
+                  {frame.equipped
+                    ? 'на аватаре'
                     : frame.achievement
                       ? 'за достижение'
-                      : frame.price === 0
-                        ? 'базовая'
-                        : `${formatNumber(frame.price ?? 0)} D`}
-              </span>
+                      : 'базовая'}
+                </span>
+              )}
+            </div>
+          ))
+        ) : (
+          sortedThemes.map((theme) => (
+            <div
+              key={theme.key}
+              className={cn(
+                'flex items-center gap-3 rounded-2xl border p-3',
+                theme.owned
+                  ? 'border-white/[0.07] bg-ink-800'
+                  : 'border-white/[0.04] bg-ink-800/45 opacity-60',
+              )}
+            >
+              <div
+                className="h-10 w-10 shrink-0 rounded-full border border-white/20"
+                style={{
+                  background: `linear-gradient(135deg, ${theme.primary}, ${theme.secondary})`,
+                }}
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-semibold text-paper">{theme.title}</span>
+                  {!theme.owned && <span className="text-[8px] text-muted/40">🔒</span>}
+                </div>
+                <div className="mt-0.5 truncate text-[8px] text-muted/55">{theme.description}</div>
+              </div>
+              {theme.owned && !theme.equipped ? (
+                <button
+                  type="button"
+                  disabled={busy !== null}
+                  onClick={() => void equipTheme(theme.key)}
+                  className="rounded-lg border border-accent/30 bg-accent/10 px-2 py-1.5 text-[7px] font-semibold text-accent-soft"
+                >
+                  {busy === theme.key ? '…' : 'Применить'}
+                </button>
+              ) : (
+                <span
+                  className={cn(
+                    'rounded-md border px-1.5 py-1 text-[7px] font-semibold',
+                    theme.equipped
+                      ? 'border-teal/25 bg-teal/10 text-teal'
+                      : 'border-gold/15 text-gold/60',
+                  )}
+                >
+                  {theme.equipped ? 'выбрана' : 'из кейсов'}
+                </span>
+              )}
             </div>
           ))
         )}
       </div>
-
-      <Link
-        to="/frames"
-        className="mt-3 flex items-center justify-center gap-1.5 rounded-xl border border-accent/25 bg-accent/10 py-3 text-[10px] font-semibold text-accent-soft"
-      >
-        <Palette size={13} /> Открыть магазин рамок
-      </Link>
     </div>
   );
 }
 
 function BoostersPanel() {
-  const { me } = useAuth();
-  const boost = me?.stats;
-  const boostPercent = boost?.luck_boost_percent ?? 0;
-  const boostSpins = boost?.luck_boost_spins ?? 0;
-  const active = boostSpins > 0;
+  const { refresh } = useAuth();
+  const { toast } = useToast();
+  const [items, setItems] = useState<Booster[] | null>(null);
+  const [activePercent, setActivePercent] = useState(0);
+  const [activeSpins, setActiveSpins] = useState(0);
+  const [busy, setBusy] = useState<number | null>(null);
+
+  useEffect(() => {
+    void api
+      .boosters()
+      .then((data) => {
+        setItems(data.boosters);
+        setActivePercent(data.active_percent);
+        setActiveSpins(data.active_spins);
+      })
+      .catch(() => setItems([]));
+  }, []);
+
+  async function activate(booster: Booster) {
+    if (busy !== null) return;
+    setBusy(booster.id);
+    try {
+      const data = await api.activateBooster(booster.id);
+      setItems((current) => (current ?? []).filter((item) => item.id !== booster.id));
+      setActivePercent(data.active_percent);
+      setActiveSpins(data.active_spins);
+      hapticNotify('success');
+      toast(`Бустер +${booster.percent}% активирован`, 'success');
+      await refresh();
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Не удалось активировать бустер', 'error');
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const active = activeSpins > 0;
 
   return (
     <div>
@@ -609,45 +777,64 @@ function BoostersPanel() {
             <Zap size={16} />
           </div>
           <div>
-            <div className="text-[11px] font-semibold text-paper">Бустер удачи</div>
+            <div className="text-[11px] font-semibold text-paper">Активный бустер</div>
             <div className="text-[8px] text-muted/55">
-              {active ? 'активен' : 'сейчас не активен'}
+              {active ? 'действует сейчас' : 'не активирован'}
             </div>
           </div>
         </div>
         {active ? (
-          <>
-            <div className="mt-3 flex items-end justify-between">
-              <span className="font-display text-2xl font-semibold text-teal">
-                +{boostPercent.toFixed(0)}%
-              </span>
-              <span className="text-[9px] text-muted">
-                осталось {boostSpins} круток
-              </span>
-            </div>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.07]">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-teal to-accent"
-                style={{ width: `${Math.min(100, boostSpins * 4)}%` }}
-              />
-            </div>
-          </>
+          <div className="mt-3 font-display text-2xl font-semibold text-teal">
+            +{activePercent.toFixed(0)}%
+          </div>
         ) : (
-          <p className="mt-3 text-[8px] leading-relaxed text-muted/60">
-            Бустеры выпадают в кейсах. Они временно повышают шансы на редкие домены.
+          <p className="mt-3 text-[8px] text-muted/60">
+            Бустеры из кейсов лежат здесь, пока ты их не активируешь.
           </p>
         )}
-        <Link
-          to="/cases"
-          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-gold/25 bg-gold/10 py-2.5 text-[9px] font-semibold text-gold"
-        >
-          <KeyRound size={11} /> Открыть кейс
-        </Link>
       </div>
 
-      <div className="mt-3 rounded-2xl border border-white/[0.05] bg-ink-800/50 p-3 text-[8px] leading-relaxed text-muted/55">
-        Бустер действует на все крутки, включая ×3. После последней крутки он исчезает.
+      <div className="mt-3 space-y-2">
+        {items === null ? (
+          <div className="h-20 animate-pulse rounded-2xl border border-white/[0.04] bg-white/[0.02]" />
+        ) : items.length === 0 ? (
+          <div className="rounded-2xl border border-white/[0.05] bg-ink-800/50 p-4 text-center text-[9px] text-muted/55">
+            Нет неактивных бустеров
+          </div>
+        ) : (
+          items.map((booster) => (
+            <div
+              key={booster.id}
+              className="flex items-center gap-3 rounded-2xl border border-teal/15 bg-ink-800 p-3"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-teal/20 bg-teal/10 text-teal">
+                <Zap size={15} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] font-semibold text-paper">
+                  Удача +{booster.percent}%
+                </div>
+                <div className="text-[8px] text-muted/55">на {booster.spins} круток</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => void activate(booster)}
+                disabled={busy !== null}
+                className="rounded-lg border border-teal/30 bg-teal/10 px-2.5 py-1.5 text-[8px] font-semibold text-teal disabled:opacity-50"
+              >
+                {busy === booster.id ? '…' : 'Активировать'}
+              </button>
+            </div>
+          ))
+        )}
       </div>
+
+      <Link
+        to="/cases"
+        className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-gold/25 bg-gold/10 py-2.5 text-[9px] font-semibold text-gold"
+      >
+        <KeyRound size={11} /> Открыть кейс
+      </Link>
     </div>
   );
 }

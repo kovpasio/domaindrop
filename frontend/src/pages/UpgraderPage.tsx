@@ -36,17 +36,19 @@ const FALLBACK_SECTORS: UpgradeSector[] = [
   { sector: 75, multiplier: 4 / 3, ev: 1 },
 ];
 
-const SECTOR_COLORS = ['#4D9BFF', '#B07CFF', '#F2A54A', '#43D6C5'];
+const SECTOR_COLORS = ['#4D9BFF', '#B07CFF', '#F2A54A', '#F06473'];
+
+function customChanceColor(percent: number): string {
+  const hue = 140 - ((Math.min(75, Math.max(1, percent)) - 1) / 74) * 140;
+  return `hsl(${hue.toFixed(1)} 78% 58%)`;
+}
 
 // The scale fills from the bottom (6 o'clock) symmetrically to both sides, so a
 // chance of N% covers N * 1.8deg on each half of the wheel. The lowest 1% of the
 // filled arc is a jackpot band: the arrow there pays x5.
 const JACKPOT_ZONE_SHARE = 0.01;
 const JACKPOT_MULTIPLIER = 5;
-// Deliberately magenta/rose: it contrasts with all four sector colors,
-// including the gold 50% sector where the old gold jackpot band disappeared.
-const JACKPOT_ACCENT = '#FF3D8D';
-const JACKPOT_ACCENT_SOFT = '#FF8DB7';
+const JACKPOT_ACCENT = '#45D68A';
 
 function filledHalfAngle(chance: number): number {
   return Math.min(179, Math.max(0.5, chance * 1.8));
@@ -55,7 +57,7 @@ function filledHalfAngle(chance: number): number {
 function landingAngle(chance: number, success: boolean, jackpot: boolean): number {
   const half = filledHalfAngle(chance);
   // Half of the jackpot band, measured from the bottom of the wheel.
-  const jackpotHalf = Math.max(0.02, half * JACKPOT_ZONE_SHARE);
+  const jackpotHalf = half * JACKPOT_ZONE_SHARE;
   if (jackpot) {
     return 180 + (Math.random() * 2 - 1) * jackpotHalf * 0.8;
   }
@@ -241,9 +243,9 @@ export function UpgraderPage() {
         )}
       </AnimatePresence>
 
-      <section className="relative mb-4 overflow-hidden rounded-2xl bg-gradient-to-br from-accent/50 via-gold/25 to-teal/40 p-px shadow-neon-lime">
+      <section className="relative mb-4 overflow-hidden rounded-2xl bg-gradient-to-br from-accent/40 via-gold/20 to-teal/35 p-px">
         <div className="relative overflow-hidden rounded-[15px] bg-ink-800">
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-accent/[0.13] to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-accent/[0.08] to-transparent" />
           <div className="relative p-4">
             <div className="mb-3 flex items-start justify-between">
               <div>
@@ -268,7 +270,7 @@ export function UpgraderPage() {
                 chanceRange={chanceRange}
                 color={
                   customChance !== null
-                    ? '#F2A54A'
+                    ? customChanceColor(quotedChance)
                     : SECTOR_COLORS[sectorIndex % SECTOR_COLORS.length]
                 }
                 arrowAngle={arrowAngle}
@@ -321,29 +323,36 @@ export function UpgraderPage() {
                 }}
                 className={cn(
                   'rounded-lg border px-0.5 py-2 text-center transition',
-                  customChance !== null
-                    ? 'border-gold/70 bg-gold/15'
-                    : 'border-white/[0.06] bg-white/[0.025] hover:border-white/[0.14]',
+                  customChance === null &&
+                    'border-white/[0.06] bg-white/[0.025] hover:border-white/[0.14]',
                 )}
+                style={
+                  customChance !== null
+                    ? {
+                        borderColor: `${customChanceColor(customChance)}80`,
+                        background: `${customChanceColor(customChance)}1A`,
+                        color: customChanceColor(customChance),
+                      }
+                    : undefined
+                }
               >
-                <div
-                  className={cn(
-                    'py-0.5 font-display text-[10px] font-bold',
-                    customChance !== null ? 'text-gold' : 'text-muted',
-                  )}
-                >
-                  свой
-                </div>
+                <div className="py-0.5 font-display text-[10px] font-bold">свой</div>
               </button>
             </div>
 
             {customChance !== null && (
-              <div className="mt-3 rounded-xl border border-gold/25 bg-ink-900/70 p-3">
+              <div
+                className="mt-3 rounded-xl border bg-ink-900/70 p-3"
+                style={{ borderColor: `${customChanceColor(customChance)}45` }}
+              >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted/60">
                     свой шанс
                   </span>
-                  <span className="font-display text-[12px] font-semibold text-gold">
+                  <span
+                    className="font-display text-[12px] font-semibold"
+                    style={{ color: customChanceColor(customChance) }}
+                  >
                     {customChance}%
                   </span>
                 </div>
@@ -359,7 +368,8 @@ export function UpgraderPage() {
                     setCustomChance(value);
                     setQuotedChance(value);
                   }}
-                  className="mt-2 h-1.5 w-full cursor-pointer accent-[#F2A54A]"
+                  className="mt-2 h-1.5 w-full cursor-pointer"
+                  style={{ accentColor: customChanceColor(customChance) }}
                 />
                 <div className="mt-1 flex justify-between text-[7px] text-muted/50">
                   <span>1%</span>
@@ -626,21 +636,17 @@ function ChanceWheel({
   // The jackpot band is 1% of the filled arc. It gets a small visual minimum so
   // the marker stays readable; the real trigger probability always follows the
   // chance on the server.
-  const jackpotAngle = Math.max(0.5, halfAngle * JACKPOT_ZONE_SHARE);
+  const jackpotAngle = halfAngle * JACKPOT_ZONE_SHARE;
   const jackpotArc = (circumference * jackpotAngle * 2) / 360;
 
   return (
     <div className="relative" style={{ width: size, height: size }}>
-      <div
-        className="absolute inset-6 rounded-full blur-2xl"
-        style={{ background: `${color}1F` }}
-      />
       <svg viewBox="0 0 240 240" className="relative h-full w-full overflow-visible">
         <defs>
           <linearGradient id="jackpotGradient" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#FF2D7A" />
+            <stop offset="0%" stopColor="#22B573" />
             <stop offset="48%" stopColor={JACKPOT_ACCENT} />
-            <stop offset="100%" stopColor="#FF6B9A" />
+            <stop offset="100%" stopColor="#8BE8B5" />
           </linearGradient>
         </defs>
         <circle cx={center} cy={center} r={104} fill="none" stroke="rgb(var(--ink-700))" strokeWidth="1" opacity=".7" />
@@ -661,7 +667,7 @@ function ChanceWheel({
             strokeLinecap="round"
             strokeDasharray={`${halfArc} ${circumference - halfArc}`}
             transform={transform}
-            style={{ filter: `drop-shadow(0 0 7px ${color}88)` }}
+            style={{ transition: 'stroke 180ms linear' }}
           />
         ))}
 
@@ -672,22 +678,9 @@ function ChanceWheel({
           fill="none"
           stroke="url(#jackpotGradient)"
           strokeWidth="18"
-          strokeLinecap="round"
+          strokeLinecap="butt"
           strokeDasharray={`${jackpotArc} ${circumference - jackpotArc}`}
           transform={`rotate(${90 - jackpotAngle} ${center} ${center})`}
-          style={{ filter: 'drop-shadow(0 0 9px #FF3D8DCC)' }}
-        />
-        <circle
-          cx={center}
-          cy={center}
-          r={radius}
-          fill="none"
-          stroke={JACKPOT_ACCENT_SOFT}
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeDasharray={`${jackpotArc * 0.72} ${circumference - jackpotArc * 0.72}`}
-          transform={`rotate(${90 - jackpotAngle * 0.86} ${center} ${center})`}
-          opacity=".9"
         />
 
         {Array.from({ length: 48 }).map((_, index) => {
@@ -759,7 +752,7 @@ function ChanceWheel({
 
       <div
         title="Попадание в нижнюю зону умножает награду на 5"
-        className="pointer-events-none absolute left-1/2 -translate-x-1/2 rounded-full border border-[#FF6B9A]/70 bg-[#2A1020]/95 px-2 py-[2px] text-[7px] font-bold leading-[9px] tracking-[0.08em] text-[#FF9DBF] shadow-[0_0_12px_rgba(255,61,141,0.45)]"
+        className="pointer-events-none absolute left-1/2 -translate-x-1/2 rounded-full border border-[#45D68A]/60 bg-[#0E2A1C]/95 px-2 py-[2px] text-[7px] font-bold leading-[9px] tracking-[0.08em] text-[#A7F3C8]"
         style={{ bottom: size * 0.18 }}
       >
         ×{JACKPOT_MULTIPLIER}
@@ -777,7 +770,7 @@ function ResultCard({ result, onClose }: { result: UpgradeResult; onClose: () =>
       className={cn(
         'mb-4 overflow-hidden rounded-2xl border p-4',
         result.jackpot
-          ? 'border-[#FF4D8D]/55 bg-gradient-to-br from-[#FF3D8D]/[0.16] via-ink-800 to-[#FF3D8D]/[0.05]'
+          ? 'border-[#45D68A]/55 bg-gradient-to-br from-[#45D68A]/[0.16] via-ink-800 to-[#45D68A]/[0.05]'
           : result.success
             ? 'border-teal/35 bg-gradient-to-br from-teal/[0.12] via-ink-800 to-accent/[0.08]'
             : 'border-rarity-mythic/30 bg-gradient-to-br from-rarity-mythic/[0.1] via-ink-800 to-ink-800',
@@ -788,7 +781,7 @@ function ResultCard({ result, onClose }: { result: UpgradeResult; onClose: () =>
           className={cn(
             'flex items-center gap-1.5 text-[10px] font-semibold',
             result.jackpot
-              ? 'text-[#FF9DBF]'
+              ? 'text-[#A7F3C8]'
               : result.success
                 ? 'text-teal'
                 : 'text-rarity-mythic',
@@ -822,7 +815,7 @@ function ResultCard({ result, onClose }: { result: UpgradeResult; onClose: () =>
             <RarityBadge rarity={result.domain.rarity} />
             <span className="text-[8px] text-muted">шанс {result.chance.toFixed(2)}%</span>
             {result.jackpot && (
-              <span className="rounded-full border border-[#FF4D8D]/60 bg-[#FF3D8D]/15 px-1.5 py-px text-[7px] font-bold text-[#FF9DBF]">
+              <span className="rounded-full border border-[#45D68A]/60 bg-[#45D68A]/15 px-1.5 py-px text-[7px] font-bold text-[#A7F3C8]">
                 ×{JACKPOT_MULTIPLIER}
               </span>
             )}

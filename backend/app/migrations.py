@@ -26,7 +26,15 @@ POSTGRES_STATEMENTS = (
     "ALTER TABLE inventory ALTER COLUMN sold_price TYPE BIGINT",
     "ALTER TABLE upgrades ALTER COLUMN multiplier TYPE NUMERIC(12, 6)",
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS frame_key VARCHAR(32) NOT NULL DEFAULT 'default'",
-    "ALTER TABLE users ADD COLUMN IF NOT EXISTS theme_key VARCHAR(32) NOT NULL DEFAULT 'midnight'",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS theme_key VARCHAR(32) NOT NULL DEFAULT 'mono'",
+    "ALTER TABLE users ALTER COLUMN theme_key SET DEFAULT 'mono'",
+    """DO $$
+    BEGIN
+        IF NOT EXISTS (SELECT 1 FROM catalog_meta WHERE key = 'theme_mono_default') THEN
+            UPDATE users SET theme_key = 'mono';
+            INSERT INTO catalog_meta (key, value) VALUES ('theme_mono_default', '1');
+        END IF;
+    END $$""",
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS theme_accent VARCHAR(16)",
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS case_keys INTEGER NOT NULL DEFAULT 3",
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS luck_boost_percent DOUBLE PRECISION NOT NULL DEFAULT 0",

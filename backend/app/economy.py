@@ -245,9 +245,14 @@ def weight_for(price: int, rarity: Rarity) -> float:
     return luck / math.pow(max(1, price), 0.6)
 
 
-def daily_bonus_for(balance: int, percent: int = 25, maximum: int = 1_000_000) -> int:
-    """Daily bonus is a percentage of the current balance, capped."""
-    return min(maximum, max(0, int(balance * percent / 100)))
+def daily_bonus_for(
+    balance: int,
+    percent: int = 25,
+    maximum: int = 1_000_000,
+    minimum: int = 500,
+) -> int:
+    """Daily bonus is a percentage of the current balance, capped and floored."""
+    return min(maximum, max(minimum, int(balance * percent / 100)))
 
 
 def rarity_for_price(price: int) -> Rarity:

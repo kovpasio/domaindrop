@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import random
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Domain
+from app.models import Domain, UserFrame, UserTheme
 from app.services.frames import FRAME_BY_KEY
 from app.services.roulette import random_domain_in_rarity
+from app.services.themes import THEME_BY_KEY
 
 CASES: tuple[dict, ...] = (
     {
@@ -15,8 +17,9 @@ CASES: tuple[dict, ...] = (
         "description": "Первый шаг: домен, косметика или бустер.",
         "cost": 1,
         "rarities": ("common", "rare"),
-        "frames": ("ocean", "sunset", "frame_spins_1000"),
-        "boost": {"percent": 5.0, "spins": 5},
+        "frames": ("ocean", "sunset"),
+        "themes": ("ocean", "sunset"),
+        "boost": {"min_percent": 3, "max_percent": 7, "min_spins": 4, "max_spins": 8},
         "accent": "#4D9BFF",
     },
     {
@@ -25,8 +28,9 @@ CASES: tuple[dict, ...] = (
         "description": "Более редкие домены и усиленные бустеры.",
         "cost": 3,
         "rarities": ("rare", "epic"),
-        "frames": ("neon", "gold", "frame_collector_50"),
-        "boost": {"percent": 10.0, "spins": 10},
+        "frames": ("neon", "gold"),
+        "themes": ("violet", "emerald"),
+        "boost": {"min_percent": 6, "max_percent": 12, "min_spins": 6, "max_spins": 12},
         "accent": "#B07CFF",
     },
     {
@@ -35,8 +39,9 @@ CASES: tuple[dict, ...] = (
         "description": "Шанс на Mythic и эксклюзивную косметику.",
         "cost": 6,
         "rarities": ("legendary", "mythic"),
-        "frames": ("mythic", "frame_first_mythic"),
-        "boost": {"percent": 15.0, "spins": 15},
+        "frames": ("mythic",),
+        "themes": ("midnight",),
+        "boost": {"min_percent": 10, "max_percent": 20, "min_spins": 8, "max_spins": 15},
         "accent": "#F06473",
     },
 )
@@ -70,11 +75,11 @@ async def _domain_offer(db: AsyncSession, case: dict) -> dict:
     }
 
 
-def _cosmetic_offer(case: dict) -> dict:
-    frame_key = random.choice(list(case["frames"]))
+def _frame_offer(frame_key: str) -> dict:
     frame = FRAME_BY_KEY[frame_key]
     return {
         "kind": "cosmetic",
+        "cosmetic_kind": "frame",
         "title": frame["title"],
         "description": "Рамка профиля",
         "frame_key": frame_key,
@@ -82,30 +87,68 @@ def _cosmetic_offer(case: dict) -> dict:
     }
 
 
-def _booster_offer(case: dict) -> dict:
-    boost = case["boost"]
+def _theme_offer(theme_key: str) -> dict:
+    theme = THEME_BY_KEY[theme_key]
     return {
-        "kind": "booster",
-        "title": f"Удача +{boost['percent']:g}%",
-        "description": f"На {boost['spins']} следующих круток",
-        "luck_percent": float(boost["percent"]),
-        "spins": int(boost["spins"]),
+        "kind": "cosmetic",
+        "cosmetic_kind": "theme",
+        "title": theme["title"],
+        "description": "Тема приложения",
+        "theme_key": theme_key,
+        "primary": theme["primary"],
     }
 
 
-async def build_case_offers(db: AsyncSession, case: dict) -> list[dict]:
+def _booster_offer(case: dict) -> dict:
+    boost = case["boost"]
+    percent = random.randint(int(boost["min_percent"]), int(boost["max_percent"]))
+    spins = random.randint(int(boost["min_spins"]), int(boost["max_spins"]))
+    return {
+        "kind": "booster",
+        "title": f"Удача +{percent}%",
+        "description": f"На {spins} следующих круток",
+        "luck_percent": float(percent),
+        "spins": int(spins),
+    }
+
+
+async def build_case_offers(db: AsyncSession, case: dict, user_id: int) -> list[dict]:
     """A case has a 2.5% chance to contain one cosmetic; the other slots are
-    split evenly between domains and boosters."""
+    split evenly between domains and boosters. Already owned cosmetics are
+    excluded from the pool."""
+    owned_frames = set(
+        (
+            await db.scalars(
+                select(UserFrame.frame_key).where(UserFrame.user_id == user_id)
+            )
+        ).all()
+    )
+    owned_themes = set(
+        (
+            await db.scalars(
+                select(UserTheme.theme_key).where(UserTheme.user_id == user_id)
+            )
+        ).all()
+    )
+    available_cosmetics: list[tuple[str, str]] = [
+        ("frame", str(key))
+        for key in case["frames"]
+        if str(key) not in owned_frames
+    ]
+    available_cosmetics.extend(
+        ("theme", str(key))
+        for key in case["themes"]
+        if str(key) not in owned_themes
+    )
+
     kinds = [kind for kind, _weight in REWARD_WEIGHTS]
     weights = [weight for _kind, weight in REWARD_WEIGHTS]
-
     slot_kinds = [random.choices(kinds, weights=weights, k=1)[0] for _ in range(3)]
-    if random.random() < COSMETIC_CHANCE:
+    if available_cosmetics and random.random() < COSMETIC_CHANCE:
         slot_kinds[random.randrange(3)] = "cosmetic"
 
     offers: list[dict] = []
     seen_domain_ids: set[int] = set()
-
     for kind in slot_kinds:
         if kind == "domain":
             offer = await _domain_offer(db, case)
@@ -114,8 +157,14 @@ async def build_case_offers(db: AsyncSession, case: dict) -> list[dict]:
                 offer = await _domain_offer(db, case)
                 attempts += 1
             seen_domain_ids.add(int(offer["domain_id"]))
-        elif kind == "cosmetic":
-            offer = _cosmetic_offer(case)
+        elif kind == "cosmetic" and available_cosmetics:
+            cosmetic_kind, cosmetic_key = random.choice(available_cosmetics)
+            offer = (
+                _frame_offer(cosmetic_key)
+                if cosmetic_kind == "frame"
+                else _theme_offer(cosmetic_key)
+            )
+            available_cosmetics.remove((cosmetic_kind, cosmetic_key))
         else:
             offer = _booster_offer(case)
         offers.append(offer)

@@ -17,8 +17,6 @@ import { SettingsPage } from '@/pages/SettingsPage';
 import { MorePage } from '@/pages/MorePage';
 import { StatisticsPage } from '@/pages/StatisticsPage';
 import { AchievementsPage } from '@/pages/AchievementsPage';
-import { FramesPage } from '@/pages/FramesPage';
-import { ThemesPage } from '@/pages/ThemesPage';
 import { CasesPage } from '@/pages/CasesPage';
 import { applyTheme } from '@/lib/themes';
 
@@ -74,8 +72,6 @@ export default function App() {
         <Route path="/more" element={<MorePage />} />
         <Route path="/statistics" element={<StatisticsPage />} />
         <Route path="/achievements" element={<AchievementsPage />} />
-        <Route path="/frames" element={<FramesPage />} />
-        <Route path="/themes" element={<ThemesPage />} />
         <Route path="/cases" element={<CasesPage />} />
         <Route path="/admin" element={<AdminPage />} />
       </Route>

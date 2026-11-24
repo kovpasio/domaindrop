@@ -72,7 +72,7 @@ export function applyTheme(themeKey?: string | null, accentColor?: string | null
   const root = document.documentElement;
   const safeTheme = themeKey && (themeKey === 'custom' || THEME_PRESETS.some((item) => item.key === themeKey))
     ? themeKey
-    : 'midnight';
+    : 'mono';
   root.dataset.theme = safeTheme;
 
   if (safeTheme === 'custom' && accentColor && HEX.test(accentColor)) {

@@ -6,12 +6,15 @@ import {
   CheckCircle2,
   Coins,
   Dices,
+  KeyRound,
   Loader2,
   Package,
   RotateCw,
+  ShieldCheck,
   Settings2,
   Sparkles,
   Undo2,
+  Zap,
 } from 'lucide-react';
 import { api } from '@/api/client';
 import { useAuth } from '@/context/AuthContext';
@@ -414,20 +417,6 @@ export function RoulettePage() {
             {formatNumber(meta?.total_domains ?? 0)} доменов в пуле
           </p>
         </div>
-        <div className="rounded-xl border border-white/[0.07] bg-ink-800 px-3 py-2 text-right">
-          <div className="text-[8px] uppercase tracking-[0.12em] text-muted/60">Спинов</div>
-          <div className="mt-0.5 font-display text-sm font-semibold text-paper">
-            {formatNumber(me.user.total_spins)}
-          </div>
-          <div className="mt-1 text-[8px] font-semibold text-teal">
-            удача +{me.progress.total_luck.toFixed(1)}%
-          </div>
-          <div className="mt-0.5 text-[7px] text-rarity-mythic/80">
-            {me.stats.pity_counter + 1 >= me.stats.pity_threshold
-              ? 'Mythic гарантирован'
-              : `гарант через ${me.stats.pity_threshold - me.stats.pity_counter}`}
-          </div>
-        </div>
       </div>
 
       <div className="grid grid-cols-4 gap-1.5">
@@ -648,6 +637,20 @@ export function RoulettePage() {
             : `Крутить${triple ? ' ×3' : ''} · ${formatNumber(activeCost)} D`}
       </button>
 
+      <div className="flex items-center justify-center gap-1 text-[8px] text-muted/55">
+        <ShieldCheck size={10} className="text-rarity-mythic/70" />
+        {me.stats.pity_counter + 1 >= me.stats.pity_threshold
+          ? 'Mythic гарантирован'
+          : `До гаранта Mythic: ${me.stats.pity_threshold - me.stats.pity_counter} круток`}
+      </div>
+
+      {me.stats.luck_boost_spins > 0 && (
+        <div className="flex items-center justify-center gap-1 text-[8px] font-semibold text-teal">
+          <Zap size={10} /> Бустер +{me.stats.luck_boost_percent.toFixed(0)}% · осталось{' '}
+          {me.stats.luck_boost_spins} круток
+        </div>
+      )}
+
       {!canAfford && activeRoll && (
         <div className="flex items-center justify-between rounded-xl border border-rarity-legendary/20 bg-rarity-legendary/[0.05] px-3.5 py-2.5 text-[10px] text-rarity-legendary">
           <span>Недостаточно монет для этого типа</span>
@@ -688,6 +691,22 @@ export function RoulettePage() {
                 </span>
               )}
             </div>
+            {result.key_dropped && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.7, y: 6, rotate: -8 }}
+                animate={{ opacity: 1, scale: 1, y: 0, rotate: 0 }}
+                transition={{ type: 'spring', stiffness: 320, damping: 18 }}
+                className="mt-2 inline-flex items-center gap-1 rounded-md border border-gold/30 bg-gold/10 px-1.5 py-1 text-[8px] font-semibold text-gold shadow-[0_0_16px_rgba(242,165,74,0.18)]"
+              >
+                <motion.span
+                  animate={{ rotate: [0, -12, 12, 0] }}
+                  transition={{ duration: 0.45, delay: 0.08 }}
+                >
+                  <KeyRound size={10} />
+                </motion.span>{' '}
+                +1 ключ из рулетки
+              </motion.div>
+            )}
             <div className="mt-2.5 flex items-end justify-between gap-3">
               <div className="min-w-0">
                 <RarityBadge rarity={result.rarity} />

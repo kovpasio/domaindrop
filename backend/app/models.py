@@ -61,7 +61,7 @@ class User(Base):
         String(32), nullable=False, default="default", server_default="default"
     )
     theme_key: Mapped[str] = mapped_column(
-        String(32), nullable=False, default="midnight", server_default="midnight"
+        String(32), nullable=False, default="mono", server_default="mono"
     )
     theme_accent: Mapped[str | None] = mapped_column(String(16), nullable=True)
     case_keys: Mapped[int] = mapped_column(Integer, nullable=False, default=3, server_default="3")
@@ -107,6 +107,37 @@ class CaseOpening(Base):
     created_at: Mapped[datetime] = mapped_column(
         UTCDateTime(), nullable=False, server_default=func.now()
     )
+
+
+class UserTheme(Base):
+    __tablename__ = "user_themes"
+    __table_args__ = (UniqueConstraint("user_id", "theme_key", name="uq_user_theme"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    theme_key: Mapped[str] = mapped_column(String(32), nullable=False)
+    acquired_at: Mapped[datetime] = mapped_column(
+        UTCDateTime(), nullable=False, server_default=func.now()
+    )
+
+
+class UserBooster(Base):
+    __tablename__ = "user_boosters"
+    __table_args__ = (Index("ix_user_boosters_user_used", "user_id", "activated_at"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    kind: Mapped[str] = mapped_column(String(32), nullable=False, default="luck")
+    percent: Mapped[float] = mapped_column(Float, nullable=False)
+    spins: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        UTCDateTime(), nullable=False, server_default=func.now()
+    )
+    activated_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
 
 
 class UserFrame(Base):

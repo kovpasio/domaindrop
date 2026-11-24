@@ -43,20 +43,6 @@ const LINKS = [
     color: '#F2A54A',
   },
   {
-    to: '/frames',
-    label: 'Рамки профиля',
-    description: 'Купить или открыть рамку за достижение',
-    icon: Sparkles,
-    color: '#B07CFF',
-  },
-  {
-    to: '/themes',
-    label: 'Темы',
-    description: 'Цвета и оформление приложения',
-    icon: Sparkles,
-    color: '#FF965C',
-  },
-  {
     to: '/drops',
     label: 'Лента дропов',
     description: 'Последние 20 выпадений в реальном времени',
@@ -92,7 +78,7 @@ export function MorePage() {
       <PageTitle
         eyebrow="navigation"
         title="Ещё"
-        description="Рейтинг, статистика, достижения, рамки и настройки."
+        description="Рейтинг, статистика, достижения, кейсы и настройки."
       />
 
       <div className="space-y-2">

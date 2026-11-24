@@ -108,6 +108,40 @@ export interface ThemeResponse {
   accent_color: string | null;
 }
 
+export interface ThemeItem {
+  key: string;
+  title: string;
+  description: string;
+  primary: string;
+  secondary: string;
+  owned: boolean;
+  equipped: boolean;
+}
+
+export interface ThemesResponse {
+  themes: ThemeItem[];
+  owned_count: number;
+}
+
+export interface Booster {
+  id: number;
+  kind: string;
+  percent: number;
+  spins: number;
+}
+
+export interface BoostersResponse {
+  boosters: Booster[];
+  active_percent: number;
+  active_spins: number;
+}
+
+export interface BoosterActivateResult {
+  booster: Booster;
+  active_percent: number;
+  active_spins: number;
+}
+
 export interface TaskClaimResult {
   key: string;
   amount: number;
@@ -138,6 +172,8 @@ export interface CaseOffer {
   price: number | null;
   rarity: Rarity | null;
   frame_key: string | null;
+  theme_key: string | null;
+  cosmetic_kind: 'frame' | 'theme' | null;
   primary: string | null;
   luck_percent: number | null;
   spins: number | null;
@@ -252,6 +288,7 @@ export interface SpinResult {
   auto_sold: boolean;
   auto_sold_price: number | null;
   pity_applied: boolean;
+  key_dropped: boolean;
   inventory_id: number | null;
   created_at: string;
 }

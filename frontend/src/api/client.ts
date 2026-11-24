@@ -6,6 +6,8 @@ import type {
   AchievementsResponse,
   AuthResponse,
   AutosellSettings,
+  BoosterActivateResult,
+  BoostersResponse,
   BulkSellResult,
   CaseChooseResult,
   CaseOpening,
@@ -28,6 +30,7 @@ import type {
   SpinResult,
   TaskClaimResult,
   ThemeResponse,
+  ThemesResponse,
   UpgradePreview,
   UpgradeResult,
 } from '@/types';
@@ -209,6 +212,20 @@ export const api = {
     request<ThemeResponse>('/theme', {
       method: 'PUT',
       body: JSON.stringify({ theme_key: themeKey, accent_color: accentColor }),
+    }),
+
+  themes: () => request<ThemesResponse>('/themes'),
+
+  equipTheme: (themeKey: string) =>
+    request<ThemesResponse>(`/themes/${encodeURIComponent(themeKey)}/equip`, {
+      method: 'POST',
+    }),
+
+  boosters: () => request<BoostersResponse>('/boosters'),
+
+  activateBooster: (boosterId: number) =>
+    request<BoosterActivateResult>(`/boosters/${boosterId}/activate`, {
+      method: 'POST',
     }),
 
   cases: () => request<CasesResponse>('/cases'),

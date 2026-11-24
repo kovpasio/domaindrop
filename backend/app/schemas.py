@@ -139,6 +139,8 @@ class CaseOfferOut(BaseModel):
     price: int | None = None
     rarity: str | None = None
     frame_key: str | None = None
+    theme_key: str | None = None
+    cosmetic_kind: str | None = None
     primary: str | None = None
     luck_percent: float | None = None
     spins: int | None = None
@@ -188,6 +190,40 @@ class ThemeOut(BaseModel):
 class ThemeIn(BaseModel):
     theme_key: str
     accent_color: str | None = None
+
+
+class ThemeItemOut(BaseModel):
+    key: str
+    title: str
+    description: str
+    primary: str
+    secondary: str
+    owned: bool
+    equipped: bool
+
+
+class ThemesOut(BaseModel):
+    themes: list[ThemeItemOut]
+    owned_count: int
+
+
+class BoosterOut(BaseModel):
+    id: int
+    kind: str
+    percent: float
+    spins: int
+
+
+class BoostersOut(BaseModel):
+    boosters: list[BoosterOut]
+    active_percent: float
+    active_spins: int
+
+
+class BoosterActivateOut(BaseModel):
+    booster: BoosterOut
+    active_percent: float
+    active_spins: int
 
 
 class FrameOut(BaseModel):
@@ -244,6 +280,7 @@ class SpinOut(BaseModel):
     auto_sold: bool
     auto_sold_price: int | None
     pity_applied: bool = False
+    key_dropped: bool = False
     inventory_id: int | None = None
     created_at: datetime
 

@@ -8,12 +8,21 @@
   "portsAttributes": {
     "3000": {
       "label": "DROP.ZONE",
-      "onAutoForward": "notify"
+      "onAutoForward": "openPreview",
+      "visibility": "public"
     },
     "8000": {
       "label": "DROP.ZONE API",
-      "onAutoForward": "silent"
+      "onAutoForward": "silent",
+      "visibility": "private"
     }
+  },
+  "postCreateCommand": "cp -n .env.example .env || true; sed -i 's/^BIND_HOST=.*/BIND_HOST=0.0.0.0/' .env; docker compose up -d --build",
+  "postStartCommand": "docker compose up -d",
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "8gb",
+    "storage": "32gb"
   },
   "remoteUser": "vscode"
 }

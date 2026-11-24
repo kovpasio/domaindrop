@@ -14,12 +14,13 @@ from sqlalchemy.pool import StaticPool
 
 from app.database import get_db
 from app.economy import weight_for
-from app.models import Base, Domain, Inventory, User
+from app.models import Base, Domain, Inventory, User, UserBooster, UserTheme
 from app.services.stats import leaderboard as get_leaderboard
 from app.routers import (
     achievements,
     admin,
     auth,
+    boosters,
     cases,
     domains,
     earnings,
@@ -140,6 +141,7 @@ async def test_context(monkeypatch):
         frames.router,
         theme.router,
         cases.router,
+        boosters.router,
     ):
         app.include_router(router, prefix="/api")
     app.dependency_overrides[get_db] = override_db
@@ -464,6 +466,31 @@ async def test_upgrade_jackpot_zone_multiplies_reward(test_context, monkeypatch)
     assert regular_data["multiplier"] == pytest.approx(100 / 75)
 
 
+async def test_upgrade_jackpot_applies_x5_multiplier(test_context, monkeypatch):
+    client, Session, _fake = test_context
+    payload, headers = await _auth(client)
+    async with Session() as session:
+        domain = await session.scalar(select(Domain).where(Domain.is_available.is_(True)))
+        assert domain is not None
+        item = Inventory(user_id=payload["user"]["id"], domain_id=domain.id)
+        session.add(item)
+        await session.commit()
+        await session.refresh(item)
+        item_id = item.id
+
+    monkeypatch.setattr("app.routers.upgrades.rng.random", lambda: 0.0001)
+    result = await client.post(
+        "/api/upgrade",
+        headers=headers,
+        json={"domain_ids": [item_id], "chance_sector": 50, "chance": 50},
+    )
+    assert result.status_code == 200, result.text
+    data = result.json()
+    assert data["jackpot"] is True
+    assert data["success"] is True
+    assert data["multiplier"] == pytest.approx(10.0)
+
+
 async def test_daily_tasks_and_player_stats(test_context):
     client, _Session, _fake = test_context
     _payload, headers = await _auth(client)
@@ -512,13 +539,29 @@ async def test_pity_forces_mythic_and_resets_counter(test_context):
     assert me.json()["stats"]["pity_counter"] == 0
 
 
-async def test_theme_can_be_saved_and_is_returned_in_profile(test_context):
-    client, _Session, _fake = test_context
-    _payload, headers = await _auth(client)
+async def test_theme_can_be_saved_only_after_unlock(test_context):
+    client, Session, _fake = test_context
+    payload, headers = await _auth(client)
 
     current = await client.get("/api/theme", headers=headers)
     assert current.status_code == 200
-    assert current.json()["theme_key"] == "midnight"
+    assert current.json()["theme_key"] == "mono"
+
+    themes = await client.get("/api/themes", headers=headers)
+    assert themes.status_code == 200
+    assert themes.json()["themes"][0]["key"] == "mono"
+    assert themes.json()["themes"][0]["owned"] is True
+
+    locked = await client.put(
+        "/api/theme",
+        headers=headers,
+        json={"theme_key": "ocean", "accent_color": None},
+    )
+    assert locked.status_code == 403
+
+    async with Session() as session:
+        session.add(UserTheme(user_id=payload["user"]["id"], theme_key="ocean"))
+        await session.commit()
 
     saved = await client.put(
         "/api/theme",
@@ -562,6 +605,35 @@ async def test_case_opening_offers_three_rewards_and_choice(test_context):
 
     me = await client.get("/api/me", headers=headers)
     assert me.json()["user"]["case_keys"] == 2
+
+
+async def test_case_booster_waits_in_inventory_until_activated(test_context):
+    client, Session, _fake = test_context
+    payload, headers = await _auth(client)
+    async with Session() as session:
+        session.add(
+            UserBooster(
+                user_id=payload["user"]["id"],
+                kind="luck",
+                percent=10.0,
+                spins=8,
+            )
+        )
+        await session.commit()
+
+    boosters = await client.get("/api/boosters", headers=headers)
+    assert boosters.status_code == 200, boosters.text
+    assert boosters.json()["active_spins"] == 0
+    assert len(boosters.json()["boosters"]) == 1
+    booster_id = boosters.json()["boosters"][0]["id"]
+
+    activated = await client.post(f"/api/boosters/{booster_id}/activate", headers=headers)
+    assert activated.status_code == 200, activated.text
+    assert activated.json()["active_percent"] == 10.0
+    assert activated.json()["active_spins"] == 8
+
+    me = await client.get("/api/me", headers=headers)
+    assert me.json()["stats"]["luck_boost_spins"] == 8
 
 
 async def test_profile_frames_buy_and_equip(test_context):

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Volume2, VolumeX } from 'lucide-react';
+import { KeyRound, Volume2, VolumeX } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useSound } from '@/context/SoundContext';
 import { cn, formatNumber } from '@/lib/utils';
@@ -16,6 +16,16 @@ export function TopBar() {
         <div className="mx-auto flex h-[56px] w-full max-w-md items-center justify-between px-4">
           <Logo />
           <div className="flex items-center gap-2">
+            <Link
+              to="/cases"
+              aria-label="Кейсы и ключи"
+              className="flex h-9 items-center gap-1 rounded-xl border border-gold/25 bg-gold/[0.08] px-2 text-gold transition hover:border-gold/50 active:scale-95"
+            >
+              <KeyRound size={14} />
+              <span className="font-display text-[11px] font-bold tabular-nums">
+                {me ? me.user.case_keys : '—'}
+              </span>
+            </Link>
             <button
               type="button"
               onClick={toggle}

@@ -5,7 +5,15 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models import CaseOpening, Domain, Inventory, User, UserFrame
+from app.models import (
+    CaseOpening,
+    Domain,
+    Inventory,
+    User,
+    UserBooster,
+    UserFrame,
+    UserTheme,
+)
 from app.schemas import (
     CaseChooseIn,
     CaseChooseOut,
@@ -17,6 +25,7 @@ from app.schemas import (
 from app.security import get_current_user
 from app.services.cases import CASES, CASES_BY_KEY, build_case_offers
 from app.services.frames import FRAME_BY_KEY
+from app.services.themes import THEME_BY_KEY
 
 router = APIRouter(prefix="/cases", tags=["cases"])
 
@@ -96,7 +105,7 @@ async def open_case(
         raise HTTPException(status_code=402, detail="Недостаточно ключей")
 
     try:
-        offers = await build_case_offers(db, case)
+        offers = await build_case_offers(db, case, locked.id)
     except RuntimeError as error:
         raise HTTPException(status_code=503, detail=str(error)) from error
 
@@ -144,25 +153,48 @@ async def choose_case_reward(
         db.add(Inventory(user_id=locked.id, domain_id=domain.id))
         message = f"{domain.full_name} добавлен в инвентарь"
     elif kind == "cosmetic":
-        frame_key = str(offer["frame_key"])
-        existing = await db.scalar(
-            select(UserFrame).where(
-                UserFrame.user_id == locked.id,
-                UserFrame.frame_key == frame_key,
+        cosmetic_kind = str(offer.get("cosmetic_kind") or "frame")
+        if cosmetic_kind == "theme":
+            theme_key = str(offer["theme_key"])
+            existing = await db.scalar(
+                select(UserTheme).where(
+                    UserTheme.user_id == locked.id,
+                    UserTheme.theme_key == theme_key,
+                )
             )
-        )
-        if existing is not None:
-            locked.case_keys += 2
-            message = "Рамка уже была — начислено 2 ключа"
+            if existing is not None:
+                locked.case_keys += 2
+                message = "Тема уже была — начислено 2 ключа"
+            else:
+                db.add(UserTheme(user_id=locked.id, theme_key=theme_key))
+                theme = THEME_BY_KEY[theme_key]
+                message = f"Тема «{theme['title']}» добавлена"
         else:
-            db.add(UserFrame(user_id=locked.id, frame_key=frame_key))
-            message = f"Рамка «{FRAME_BY_KEY[frame_key]['title']}» добавлена"
+            frame_key = str(offer["frame_key"])
+            existing = await db.scalar(
+                select(UserFrame).where(
+                    UserFrame.user_id == locked.id,
+                    UserFrame.frame_key == frame_key,
+                )
+            )
+            if existing is not None:
+                locked.case_keys += 2
+                message = "Рамка уже была — начислено 2 ключа"
+            else:
+                db.add(UserFrame(user_id=locked.id, frame_key=frame_key))
+                message = f"Рамка «{FRAME_BY_KEY[frame_key]['title']}» добавлена"
     elif kind == "booster":
         percent = float(offer["luck_percent"])
         spins = int(offer["spins"])
-        locked.luck_boost_percent = max(float(locked.luck_boost_percent), percent)
-        locked.luck_boost_spins += spins
-        message = f"Удача +{percent:g}% на {spins} круток активирована"
+        db.add(
+            UserBooster(
+                user_id=locked.id,
+                kind="luck",
+                percent=percent,
+                spins=spins,
+            )
+        )
+        message = f"Бустер +{percent:g}% на {spins} круток добавлен в инвентарь"
     else:
         raise HTTPException(status_code=422, detail="Неизвестная награда")
 

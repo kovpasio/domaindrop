@@ -117,7 +117,7 @@ async def spin(
         chances = apply_luck(roll["rarity_chances"], progress.total_luck)
         autosell = await get_or_create_settings(db, locked_user.id)
 
-        created: list[tuple[Spin, Domain, Inventory | None, bool, int]] = []
+        created: list[tuple[Spin, Domain, Inventory | None, bool, int, bool]] = []
         seen_domains: set[int] = set()
         for _ in range(times):
             pity_applied = locked_user.pity_counter + 1 >= PITY_THRESHOLD
@@ -149,6 +149,11 @@ async def spin(
                 locked_user.pity_counter = 0
             else:
                 locked_user.pity_counter += 1
+            key_dropped = (
+                payload.roll_type == "normal" and secrets.randbelow(100) < 5
+            )
+            if key_dropped:
+                locked_user.case_keys += 1
 
             server_seed = secrets.token_hex(32)
             spin_row = Spin(
@@ -185,12 +190,14 @@ async def spin(
                 db.add(inventory_row)
                 await db.flush()
 
-            created.append((spin_row, domain, inventory_row, auto_sold, sale_price))
+            created.append(
+                (spin_row, domain, inventory_row, auto_sold, sale_price, key_dropped)
+            )
 
         await db.commit()
 
         items: list[SpinOut] = []
-        for spin_row, domain, inventory_row, auto_sold, sale_price in created:
+        for spin_row, domain, inventory_row, auto_sold, sale_price, key_dropped in created:
             spin_row.user = locked_user
             spin_row.domain = domain
             await publish_drop(spin_row)
@@ -206,6 +213,7 @@ async def spin(
                     auto_sold=auto_sold,
                     auto_sold_price=sale_price if auto_sold else None,
                     pity_applied=bool(spin_row.pity_applied),
+                    key_dropped=key_dropped,
                     inventory_id=inventory_row.id if inventory_row is not None else None,
                     created_at=spin_row.created_at,
                 )
