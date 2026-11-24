@@ -76,12 +76,16 @@ export function applyTheme(themeKey?: string | null, accentColor?: string | null
   root.dataset.theme = safeTheme;
 
   if (safeTheme === 'custom' && accentColor && HEX.test(accentColor)) {
+    const [r, g, b] = rgb(accentColor);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
     root.style.setProperty('--accent', mix(accentColor, 255, 0));
     root.style.setProperty('--accent-soft', mix(accentColor, 255, 0.38));
     root.style.setProperty('--accent-deep', mix(accentColor, 0, 0.24));
+    root.style.setProperty('--accent-contrast', luminance > 0.6 ? '17 18 20' : '255 255 255');
   } else {
     root.style.removeProperty('--accent');
     root.style.removeProperty('--accent-soft');
     root.style.removeProperty('--accent-deep');
+    root.style.removeProperty('--accent-contrast');
   }
 }

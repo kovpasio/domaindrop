@@ -524,7 +524,7 @@ export function UpgraderPage() {
                     className={cn(
                       'flex items-center justify-center rounded border',
                       selected
-                        ? 'border-accent bg-accent text-white'
+                        ? 'border-accent bg-accent text-accent-contrast'
                         : 'border-white/15 text-transparent',
                     )}
                     style={{ width: 17, height: 17 }}
@@ -643,8 +643,8 @@ function ChanceWheel({
             <stop offset="100%" stopColor="#FF6B9A" />
           </linearGradient>
         </defs>
-        <circle cx={center} cy={center} r={104} fill="none" stroke="#273A52" strokeWidth="1" opacity=".7" />
-        <circle cx={center} cy={center} r={radius} fill="none" stroke="#24364E" strokeWidth="16" />
+        <circle cx={center} cy={center} r={104} fill="none" stroke="rgb(var(--ink-700))" strokeWidth="1" opacity=".7" />
+        <circle cx={center} cy={center} r={radius} fill="none" stroke="rgb(var(--ink-700))" strokeWidth="16" />
 
         {[
           `rotate(90 ${center} ${center})`,
@@ -701,7 +701,7 @@ function ChanceWheel({
               y1={inner.y}
               x2={outer.x}
               y2={outer.y}
-              stroke={index % 4 === 0 ? '#7E98B8' : '#41536C'}
+              stroke={index % 4 === 0 ? 'rgb(var(--muted))' : 'rgb(var(--ink-600))'}
               strokeWidth={index % 4 === 0 ? 1.4 : 1}
               strokeLinecap="round"
               opacity={index % 4 === 0 ? 0.65 : 0.4}
@@ -709,7 +709,7 @@ function ChanceWheel({
           );
         })}
 
-        <circle cx={center} cy={center} r={59} fill="#0E1724" stroke="#2A3A52" strokeWidth="1" />
+        <circle cx={center} cy={center} r={59} fill="rgb(var(--ink-900))" stroke="rgb(var(--ink-600))" strokeWidth="1" />
         <circle
           cx={center}
           cy={center}

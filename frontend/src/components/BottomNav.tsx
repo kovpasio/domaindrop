@@ -68,7 +68,7 @@ export function BottomNav() {
               'absolute left-1/2 top-[-24px] flex h-[54px] w-[54px] -translate-x-1/2 items-center justify-center rounded-2xl border transition active:scale-95',
               rouletteActive
                 ? 'border-teal/60 bg-gradient-to-br from-accent to-teal text-[#07111D] shadow-neon-lime'
-                : 'border-accent/50 bg-gradient-to-br from-accent/90 to-accent-deep text-white shadow-neon-lime',
+                : 'border-accent/50 bg-gradient-to-br from-accent/90 to-accent-deep text-accent-contrast shadow-neon-lime',
             )}
           >
             <Dices size={24} strokeWidth={2} />

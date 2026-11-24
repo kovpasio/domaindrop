@@ -15,6 +15,7 @@
     --accent: 79 157 255;
     --accent-soft: 141 194 255;
     --accent-deep: 43 108 203;
+    --accent-contrast: 255 255 255;
     --teal: 67 214 197;
     --violet: 178 124 255;
     --gold: 242 165 74;
@@ -32,6 +33,7 @@
     --accent: 46 214 190;
     --accent-soft: 125 240 220;
     --accent-deep: 20 148 139;
+    --accent-contrast: 4 29 26;
     --teal: 77 184 255;
     --violet: 120 160 255;
     --gold: 246 190 92;
@@ -49,6 +51,7 @@
     --accent: 178 124 255;
     --accent-soft: 211 174 255;
     --accent-deep: 124 74 203;
+    --accent-contrast: 25 12 38;
     --teal: 236 133 201;
     --violet: 99 114 255;
     --gold: 247 188 105;
@@ -66,6 +69,7 @@
     --accent: 255 150 92;
     --accent-soft: 255 196 145;
     --accent-deep: 214 99 51;
+    --accent-contrast: 44 19 9;
     --teal: 255 128 168;
     --violet: 197 139 255;
     --gold: 255 210 122;
@@ -83,6 +87,7 @@
     --accent: 69 214 138;
     --accent-soft: 148 244 190;
     --accent-deep: 32 157 97;
+    --accent-contrast: 5 31 19;
     --teal: 91 205 230;
     --violet: 166 158 255;
     --gold: 240 196 88;
@@ -100,6 +105,7 @@
     --accent: 215 222 234;
     --accent-soft: 241 245 250;
     --accent-deep: 151 160 176;
+    --accent-contrast: 17 18 20;
     --teal: 184 192 205;
     --violet: 166 171 184;
     --gold: 222 202 160;

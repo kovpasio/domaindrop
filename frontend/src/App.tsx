@@ -46,7 +46,7 @@ export default function App() {
           <button
             type="button"
             onClick={retry}
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3.5 font-display text-sm font-semibold text-white transition active:scale-[0.98]"
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3.5 font-display text-sm font-semibold text-accent-contrast transition active:scale-[0.98]"
           >
             <RefreshCw size={16} />
             Попробовать снова

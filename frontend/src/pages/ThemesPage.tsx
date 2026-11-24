@@ -134,7 +134,7 @@ export function ThemesPage() {
         type="button"
         onClick={() => void save()}
         disabled={saving}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3.5 font-display text-[12px] font-semibold text-white transition hover:bg-accent-soft disabled:opacity-60"
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3.5 font-display text-[12px] font-semibold text-accent-contrast transition hover:bg-accent-soft disabled:opacity-60"
       >
         {saving ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
         {saving ? 'Сохраняем…' : 'Применить тему'}

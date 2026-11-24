@@ -15,6 +15,7 @@ export default {
           DEFAULT: 'rgb(var(--accent) / <alpha-value>)',
           soft: 'rgb(var(--accent-soft) / <alpha-value>)',
           deep: 'rgb(var(--accent-deep) / <alpha-value>)',
+          contrast: 'rgb(var(--accent-contrast) / <alpha-value>)',
         },
         neon: {
           lime: 'rgb(var(--accent) / <alpha-value>)',

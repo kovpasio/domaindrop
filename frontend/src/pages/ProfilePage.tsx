@@ -308,7 +308,7 @@ export function ProfilePage() {
                         task.claimed
                           ? 'bg-teal/10 text-teal'
                           : task.can_claim
-                            ? 'bg-accent/90 text-white active:scale-95'
+                            ? 'bg-accent/90 text-accent-contrast active:scale-95'
                             : 'bg-white/[0.04] text-muted/40',
                       )}
                     >

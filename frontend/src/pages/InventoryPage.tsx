@@ -295,7 +295,7 @@ export function InventoryPage() {
             items.length === 0 ? (
               <Link
                 to="/roulette"
-                className="flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2.5 text-[10px] font-semibold text-white"
+                className="flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2.5 text-[10px] font-semibold text-accent-contrast"
               >
                 Крутить <ArrowRight size={12} />
               </Link>
@@ -406,7 +406,7 @@ export function InventoryPage() {
                 type="button"
                 disabled={selling}
                 onClick={() => void confirmSingle()}
-                className="rounded-lg bg-accent py-2.5 text-[10px] font-semibold text-white disabled:opacity-60"
+                className="rounded-lg bg-accent py-2.5 text-[10px] font-semibold text-accent-contrast disabled:opacity-60"
               >
                 {selling ? 'Продаём…' : 'Продать'}
               </button>
@@ -446,7 +446,7 @@ export function InventoryPage() {
               type="button"
               disabled={selling}
               onClick={() => void confirmBulk()}
-              className="rounded-lg bg-accent py-2.5 text-[10px] font-semibold text-white disabled:opacity-60"
+              className="rounded-lg bg-accent py-2.5 text-[10px] font-semibold text-accent-contrast disabled:opacity-60"
             >
               {selling ? 'Продаём…' : `Продать (${selectedItems.length})`}
             </button>
@@ -519,7 +519,7 @@ function InventoryCard({
           className={cn(
             'flex h-5 w-5 items-center justify-center rounded-md border',
             selected
-              ? 'border-accent bg-accent text-white'
+              ? 'border-accent bg-accent text-accent-contrast'
               : 'border-white/15 bg-white/[0.02] text-transparent',
           )}
         >

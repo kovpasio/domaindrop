@@ -637,7 +637,7 @@ export function RoulettePage() {
           'flex w-full items-center justify-center gap-2 rounded-xl py-3.5 font-display text-[14px] font-semibold transition active:scale-[0.99]',
           disabled
             ? 'cursor-not-allowed border border-white/[0.06] bg-white/[0.03] text-muted/50'
-            : 'bg-accent text-white hover:bg-accent-soft',
+            : 'bg-accent text-accent-contrast hover:bg-accent-soft',
         )}
       >
         {spinning ? <RotateCw size={17} className="animate-spin" /> : <Dices size={18} />}
@@ -763,7 +763,7 @@ export function RoulettePage() {
                 type="button"
                 onClick={() => void spin()}
                 disabled={spinning || !canAfford}
-                className="flex items-center justify-center gap-1.5 rounded-lg bg-accent/90 py-2.5 text-[10px] font-semibold text-white transition hover:bg-accent disabled:opacity-50"
+                className="flex items-center justify-center gap-1.5 rounded-lg bg-accent/90 py-2.5 text-[10px] font-semibold text-accent-contrast transition hover:bg-accent disabled:opacity-50"
               >
                 <RotateCw size={13} /> Ещё спин
               </button>
@@ -871,7 +871,7 @@ export function RoulettePage() {
                 type="button"
                 onClick={() => void spin()}
                 disabled={spinning || !canAfford}
-                className="flex items-center gap-1.5 rounded-lg bg-accent/90 px-3 py-2 text-[9px] font-semibold text-white disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-lg bg-accent/90 px-3 py-2 text-[9px] font-semibold text-accent-contrast disabled:opacity-50"
               >
                 <RotateCw size={12} /> Ещё ×3
               </button>
@@ -960,7 +960,7 @@ function RibbonCard({ domain, highlighted }: { domain: Domain; highlighted: bool
       style={{
         width: ITEM_WIDTH,
         borderColor: highlighted ? meta.color : `${meta.color}40`,
-        background: `linear-gradient(155deg, ${meta.color}24 0%, #182334 54%, #141D2B 100%)`,
+        background: `linear-gradient(155deg, ${meta.color}24 0%, rgb(var(--ink-800)) 54%, rgb(var(--ink-900)) 100%)`,
       }}
     >
       <div className="flex items-center justify-between">
