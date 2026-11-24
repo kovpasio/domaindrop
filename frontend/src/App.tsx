@@ -1,24 +1,51 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { RefreshCw, WifiOff } from 'lucide-react';
 import { AppShell } from '@/components/AppShell';
 import { useAuth } from '@/context/AuthContext';
 import { useTelegram } from '@/hooks/useTelegram';
-import { ProfilePage } from '@/pages/ProfilePage';
-import { RoulettePage } from '@/pages/RoulettePage';
-import { InventoryPage } from '@/pages/InventoryPage';
-import { LeaderboardPage } from '@/pages/LeaderboardPage';
-import { AdminPage } from '@/pages/AdminPage';
-import { DropsPage } from '@/pages/DropsPage';
-import { EarningsPage } from '@/pages/EarningsPage';
-import { UpgraderPage } from '@/pages/UpgraderPage';
-import { SettingsPage } from '@/pages/SettingsPage';
-import { MorePage } from '@/pages/MorePage';
-import { StatisticsPage } from '@/pages/StatisticsPage';
-import { AchievementsPage } from '@/pages/AchievementsPage';
-import { CasesPage } from '@/pages/CasesPage';
 import { applyTheme } from '@/lib/themes';
+
+const ProfilePage = lazy(() =>
+  import('@/pages/ProfilePage').then((module) => ({ default: module.ProfilePage })),
+);
+const RoulettePage = lazy(() =>
+  import('@/pages/RoulettePage').then((module) => ({ default: module.RoulettePage })),
+);
+const InventoryPage = lazy(() =>
+  import('@/pages/InventoryPage').then((module) => ({ default: module.InventoryPage })),
+);
+const LeaderboardPage = lazy(() =>
+  import('@/pages/LeaderboardPage').then((module) => ({ default: module.LeaderboardPage })),
+);
+const AdminPage = lazy(() =>
+  import('@/pages/AdminPage').then((module) => ({ default: module.AdminPage })),
+);
+const DropsPage = lazy(() =>
+  import('@/pages/DropsPage').then((module) => ({ default: module.DropsPage })),
+);
+const EarningsPage = lazy(() =>
+  import('@/pages/EarningsPage').then((module) => ({ default: module.EarningsPage })),
+);
+const UpgraderPage = lazy(() =>
+  import('@/pages/UpgraderPage').then((module) => ({ default: module.UpgraderPage })),
+);
+const SettingsPage = lazy(() =>
+  import('@/pages/SettingsPage').then((module) => ({ default: module.SettingsPage })),
+);
+const MorePage = lazy(() =>
+  import('@/pages/MorePage').then((module) => ({ default: module.MorePage })),
+);
+const StatisticsPage = lazy(() =>
+  import('@/pages/StatisticsPage').then((module) => ({ default: module.StatisticsPage })),
+);
+const AchievementsPage = lazy(() =>
+  import('@/pages/AchievementsPage').then((module) => ({ default: module.AchievementsPage })),
+);
+const CasesPage = lazy(() =>
+  import('@/pages/CasesPage').then((module) => ({ default: module.CasesPage })),
+);
 
 export default function App() {
   const { loading, error, me, retry } = useAuth();
@@ -59,24 +86,26 @@ export default function App() {
   }
 
   return (
-    <Routes>
-      <Route element={<AppShell />}>
-        <Route index element={<ProfilePage />} />
-        <Route path="/roulette" element={<RoulettePage />} />
-        <Route path="/inventory" element={<InventoryPage />} />
-        <Route path="/earn" element={<EarningsPage />} />
-        <Route path="/leaderboard" element={<LeaderboardPage />} />
-        <Route path="/drops" element={<DropsPage />} />
-        <Route path="/upgrader" element={<UpgraderPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/more" element={<MorePage />} />
-        <Route path="/statistics" element={<StatisticsPage />} />
-        <Route path="/achievements" element={<AchievementsPage />} />
-        <Route path="/cases" element={<CasesPage />} />
-        <Route path="/admin" element={<AdminPage />} />
-      </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <Suspense fallback={<Splash />}>
+      <Routes>
+        <Route element={<AppShell />}>
+          <Route index element={<ProfilePage />} />
+          <Route path="/roulette" element={<RoulettePage />} />
+          <Route path="/inventory" element={<InventoryPage />} />
+          <Route path="/earn" element={<EarningsPage />} />
+          <Route path="/leaderboard" element={<LeaderboardPage />} />
+          <Route path="/drops" element={<DropsPage />} />
+          <Route path="/upgrader" element={<UpgraderPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/more" element={<MorePage />} />
+          <Route path="/statistics" element={<StatisticsPage />} />
+          <Route path="/achievements" element={<AchievementsPage />} />
+          <Route path="/cases" element={<CasesPage />} />
+          <Route path="/admin" element={<AdminPage />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 }
 

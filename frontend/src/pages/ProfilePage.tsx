@@ -1,14 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import {
-  ArrowUpFromLine,
   Check,
-  ChevronRight,
   Coins,
   Gift,
   Layers,
-  Settings2,
   Sparkles,
   Target,
   Trophy,
@@ -19,7 +14,6 @@ import { useToast } from '@/context/ToastContext';
 import { useSound } from '@/context/SoundContext';
 import { Avatar } from '@/components/Avatar';
 import { Coin } from '@/components/Coin';
-import { SectionTitle } from '@/components/SectionTitle';
 import { StatTile } from '@/components/StatTile';
 import type { DailyTask } from '@/types';
 import {
@@ -29,8 +23,6 @@ import {
   formatNumber,
   hapticImpact,
   hapticNotify,
-  RARITY,
-  RARITY_ORDER,
   timeAgo,
 } from '@/lib/utils';
 
@@ -96,7 +88,6 @@ export function ProfilePage() {
       : 100;
   const nextAvailable = stats.daily_available_at ? new Date(stats.daily_available_at).getTime() : 0;
   const dailyReady = nextAvailable <= now;
-  const maxCount = Math.max(1, ...RARITY_ORDER.map((rarity) => stats.collection_by_rarity?.[rarity] ?? 0));
 
   async function claimDaily() {
     if (!dailyReady || claiming) return;
@@ -397,80 +388,6 @@ export function ProfilePage() {
           </div>
         </div>
       </button>
-
-      <div className="grid grid-cols-2 gap-2">
-        <Link
-          to="/upgrader"
-          className="rounded-2xl border border-white/[0.06] bg-ink-800 p-3.5 transition active:scale-[0.99]"
-        >
-          <ArrowUpFromLine size={17} className="mb-2.5 text-accent-soft" />
-          <div className="text-[11px] font-semibold text-paper">Апгрейдер</div>
-          <div className="mt-0.5 text-[9px] text-muted">Объединить домены</div>
-        </Link>
-        <Link
-          to="/settings"
-          className="rounded-2xl border border-white/[0.06] bg-ink-800 p-3.5 transition active:scale-[0.99]"
-        >
-          <Settings2 size={17} className="mb-2.5 text-muted" />
-          <div className="text-[11px] font-semibold text-paper">Автопродажа</div>
-          <div className="mt-0.5 text-[9px] text-muted">Настройки дропа</div>
-        </Link>
-      </div>
-
-      <section>
-        <SectionTitle
-          action={
-            <Link
-              to="/inventory"
-              className="flex items-center gap-0.5 text-[9px] font-medium text-muted transition hover:text-paper"
-            >
-              Вся коллекция <ChevronRight size={11} />
-            </Link>
-          }
-        >
-          Состав коллекции
-        </SectionTitle>
-        <div className="rounded-2xl border border-white/[0.06] bg-ink-800 p-4">
-          {stats.collection_count === 0 ? (
-            <div className="flex flex-col items-center py-4 text-center">
-              <Sparkles size={20} className="mb-2 text-muted/40" />
-              <p className="text-[11px] text-muted">Коллекция пока пуста</p>
-              <Link
-                to="/roulette"
-                className="mt-2 text-[10px] font-medium text-accent-soft underline decoration-accent/30 underline-offset-4"
-              >
-                Сделать первый спин
-              </Link>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {RARITY_ORDER.map((rarity) => {
-                const count = stats.collection_by_rarity?.[rarity] ?? 0;
-                const meta = RARITY[rarity];
-                return (
-                  <div key={rarity} className="flex items-center gap-3">
-                    <div className="w-[68px] shrink-0 text-[8px] font-semibold uppercase tracking-[0.1em]" style={{ color: meta.color }}>
-                      {meta.label}
-                    </div>
-                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.05]">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${(count / maxCount) * 100}%` }}
-                        transition={{ duration: 0.45, ease: 'easeOut' }}
-                        className="h-full rounded-full"
-                        style={{ background: meta.color }}
-                      />
-                    </div>
-                    <div className="w-6 text-right font-display text-[11px] font-semibold tabular-nums text-muted">
-                      {count}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </section>
 
       <div className="flex items-center justify-center gap-1.5 pb-1 text-[9px] text-muted/50">
         <Sparkles size={10} />

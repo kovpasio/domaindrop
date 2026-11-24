@@ -23,5 +23,14 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: false,
+    cssCodeSplit: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          motion: ['framer-motion'],
+        },
+      },
+    },
   },
 });

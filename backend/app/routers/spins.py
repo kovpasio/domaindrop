@@ -17,6 +17,7 @@ from app.models import Domain, Inventory, Spin, User
 from app.schemas import DomainOut, KeepSpinOut, SpinBatchOut, SpinIn, SpinOut
 from app.security import get_current_user
 from app.services.autosell import get_or_create_settings, should_autosell
+from app.services.boosters import promote_next_booster
 from app.services.realtime import publish_drop
 from app.services.redis_client import redis_client
 from app.services.achievements import achievement_payload
@@ -94,6 +95,8 @@ async def spin(
                 detail=f"Недостаточно монет: нужно {total_cost}",
             )
 
+        if locked_user.luck_boost_spins <= 0:
+            await promote_next_booster(db, locked_user)
         inventory_counts = await collection_breakdown(db, locked_user.id)
         stats = await player_stats(db, locked_user.id)
         _achievements, achievement_luck = achievement_payload(
@@ -103,23 +106,25 @@ async def spin(
                 "collection": sum(inventory_counts.values()),
             }
         )
-        boost_luck = (
-            float(locked_user.luck_boost_percent)
-            if locked_user.luck_boost_spins > 0
-            else 0.0
-        )
-        progress = luck_profile(
+        base_luck = luck_profile(
             locked_user.total_spins,
             inventory_counts,
             achievement_luck,
-            boost_luck,
-        )
-        chances = apply_luck(roll["rarity_chances"], progress.total_luck)
+        ).total_luck
         autosell = await get_or_create_settings(db, locked_user.id)
 
         created: list[tuple[Spin, Domain, Inventory | None, bool, int, bool]] = []
         seen_domains: set[int] = set()
         for _ in range(times):
+            current_boost = (
+                float(locked_user.luck_boost_percent)
+                if locked_user.luck_boost_spins > 0
+                else 0.0
+            )
+            chances = apply_luck(
+                roll["rarity_chances"],
+                min(40.0, base_luck + current_boost),
+            )
             pity_applied = locked_user.pity_counter + 1 >= PITY_THRESHOLD
             rarity = PITY_RARITY if pity_applied else choose_rarity(roll, chances)
             domain = None
@@ -145,6 +150,7 @@ async def spin(
                 locked_user.luck_boost_spins -= 1
                 if locked_user.luck_boost_spins == 0:
                     locked_user.luck_boost_percent = 0
+                    await promote_next_booster(db, locked_user)
             if domain.rarity == PITY_RARITY:
                 locked_user.pity_counter = 0
             else:

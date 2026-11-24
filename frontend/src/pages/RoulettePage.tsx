@@ -177,6 +177,11 @@ export function RoulettePage() {
           'success',
         );
       }
+      if (spinResult.key_dropped) {
+        window.dispatchEvent(
+          new CustomEvent('dropzone:key-drop', { detail: { count: 1 } }),
+        );
+      }
       void refresh().catch(() => undefined);
     },
     [applyBalance, clearFinishTimer, playReveal, refresh, toast],
@@ -200,6 +205,12 @@ export function RoulettePage() {
       );
       if (items.some((item) => item.rarity === 'mythic')) {
         setMythicDrop(items.find((item) => item.rarity === 'mythic')?.domain ?? null);
+      }
+      const keyCount = items.filter((item) => item.key_dropped).length;
+      if (keyCount > 0) {
+        window.dispatchEvent(
+          new CustomEvent('dropzone:key-drop', { detail: { count: keyCount } }),
+        );
       }
       applyBalance(items[items.length - 1]?.balance ?? 0);
       playReveal(best.rarity);
@@ -413,9 +424,6 @@ export function RoulettePage() {
           <h1 className="font-display text-[26px] font-semibold leading-none tracking-tight text-paper">
             Рулетка
           </h1>
-          <p className="mt-1.5 text-[11px] text-muted">
-            {formatNumber(meta?.total_domains ?? 0)} доменов в пуле
-          </p>
         </div>
       </div>
 
@@ -691,22 +699,7 @@ export function RoulettePage() {
                 </span>
               )}
             </div>
-            {result.key_dropped && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.7, y: 6, rotate: -8 }}
-                animate={{ opacity: 1, scale: 1, y: 0, rotate: 0 }}
-                transition={{ type: 'spring', stiffness: 320, damping: 18 }}
-                className="mt-2 inline-flex items-center gap-1 rounded-md border border-gold/30 bg-gold/10 px-1.5 py-1 text-[8px] font-semibold text-gold shadow-[0_0_16px_rgba(242,165,74,0.18)]"
-              >
-                <motion.span
-                  animate={{ rotate: [0, -12, 12, 0] }}
-                  transition={{ duration: 0.45, delay: 0.08 }}
-                >
-                  <KeyRound size={10} />
-                </motion.span>{' '}
-                +1 ключ из рулетки
-              </motion.div>
-            )}
+
             <div className="mt-2.5 flex items-end justify-between gap-3">
               <div className="min-w-0">
                 <RarityBadge rarity={result.rarity} />
@@ -823,9 +816,12 @@ export function RoulettePage() {
                   >
                     <div className="min-w-0 flex-1">
                       <RarityBadge rarity={item.rarity} />
-                      <div className="mt-1 truncate font-display text-[12px] font-semibold text-paper">
-                        {item.domain.name}
-                        <span style={{ color: RARITY[item.rarity].color }}>{item.domain.zone}</span>
+                      <div className="mt-1 flex items-center gap-1 truncate font-display text-[12px] font-semibold text-paper">
+                        <span className="truncate">
+                          {item.domain.name}
+                          <span style={{ color: RARITY[item.rarity].color }}>{item.domain.zone}</span>
+                        </span>
+                        {item.key_dropped && <KeyRound size={11} className="shrink-0 text-gold" />}
                       </div>
                     </div>
                     <div className="shrink-0 text-right">
@@ -962,9 +958,6 @@ export function RoulettePage() {
         ))}
       </div>
 
-      <p className="rounded-xl border border-white/[0.04] bg-ink-800/40 px-3.5 py-3 text-[8px] leading-relaxed text-muted/70">
-        Продажа домена зачисляет ровно его цену — без скрытых комиссий и пересчёта.
-      </p>
     </div>
   );
 }

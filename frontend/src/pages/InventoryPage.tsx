@@ -11,7 +11,6 @@ import {
   PackageOpen,
   Palette,
   Sparkles,
-  Tag,
   Zap,
   Wallet,
   X,
@@ -25,7 +24,7 @@ import { BottomSheet } from '@/components/BottomSheet';
 import { EmptyState } from '@/components/EmptyState';
 import { PageTitle } from '@/components/PageTitle';
 import { RarityBadge } from '@/components/RarityBadge';
-import type { Booster, InventoryItem, ProfileFrame, Rarity, ThemeItem, Zone } from '@/types';
+import type { Booster, InventoryItem, ProfileFrame, ThemeItem, Zone } from '@/types';
 import { applyTheme } from '@/lib/themes';
 import {
   cn,
@@ -33,12 +32,10 @@ import {
   hapticImpact,
   hapticNotify,
   RARITY,
-  RARITY_ORDER,
   ZONE_META,
 } from '@/lib/utils';
 
 type ZoneFilter = 'all' | Zone;
-type RarityFilter = 'all' | Rarity;
 type InventoryTab = 'domains' | 'cosmetics' | 'boosters';
 
 export function InventoryPage() {
@@ -48,7 +45,6 @@ export function InventoryPage() {
   const [items, setItems] = useState<InventoryItem[] | null>(null);
   const [tab, setTab] = useState<InventoryTab>('domains');
   const [zone, setZone] = useState<ZoneFilter>('all');
-  const [rarity, setRarity] = useState<RarityFilter>('all');
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [sellOne, setSellOne] = useState<InventoryItem | null>(null);
   const [bulkOpen, setBulkOpen] = useState(false);
@@ -76,9 +72,8 @@ export function InventoryPage() {
     if (!items) return [];
     return items
       .filter((item) => (zone === 'all' ? true : item.domain.zone === zone))
-      .filter((item) => (rarity === 'all' ? true : item.domain.rarity === rarity))
       .sort((a, b) => b.domain.price - a.domain.price);
-  }, [items, zone, rarity]);
+  }, [items, zone]);
 
   const totalValue = useMemo(
     () => (items ?? []).reduce((sum, item) => sum + item.domain.price, 0),
@@ -266,31 +261,6 @@ export function InventoryPage() {
             />
           ))}
         </div>
-        <div className="flex items-center gap-1.5 overflow-x-auto axis-x pb-0.5">
-          <div className="mr-0.5 flex items-center gap-1 text-[8px] font-semibold uppercase tracking-[0.12em] text-muted/50">
-            <Tag size={10} /> редкость
-          </div>
-          <FilterChip
-            active={rarity === 'all'}
-            onClick={() => {
-              setRarity('all');
-              hapticImpact('light');
-            }}
-            label="Все"
-          />
-          {RARITY_ORDER.map((value) => (
-            <FilterChip
-              key={value}
-              active={rarity === value}
-              onClick={() => {
-                setRarity(value);
-                hapticImpact('light');
-              }}
-              label={RARITY[value].label}
-              color={RARITY[value].color}
-            />
-          ))}
-        </div>
       </div>
 
       {items && items.length > 0 && (
@@ -339,10 +309,7 @@ export function InventoryPage() {
             ) : (
               <button
                 type="button"
-                onClick={() => {
-                  setZone('all');
-                  setRarity('all');
-                }}
+                onClick={() => setZone('all')}
                 className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2.5 text-[10px] font-medium text-muted"
               >
                 Сбросить фильтры
@@ -727,19 +694,25 @@ function BoostersPanel() {
   const { refresh } = useAuth();
   const { toast } = useToast();
   const [items, setItems] = useState<Booster[] | null>(null);
+  const [queue, setQueue] = useState<Booster[]>([]);
   const [activePercent, setActivePercent] = useState(0);
   const [activeSpins, setActiveSpins] = useState(0);
   const [busy, setBusy] = useState<number | null>(null);
 
+  async function load() {
+    try {
+      const data = await api.boosters();
+      setItems(data.boosters);
+      setQueue(data.queue);
+      setActivePercent(data.active_percent);
+      setActiveSpins(data.active_spins);
+    } catch {
+      setItems([]);
+    }
+  }
+
   useEffect(() => {
-    void api
-      .boosters()
-      .then((data) => {
-        setItems(data.boosters);
-        setActivePercent(data.active_percent);
-        setActiveSpins(data.active_spins);
-      })
-      .catch(() => setItems([]));
+    void load();
   }, []);
 
   async function activate(booster: Booster) {
@@ -747,11 +720,14 @@ function BoostersPanel() {
     setBusy(booster.id);
     try {
       const data = await api.activateBooster(booster.id);
-      setItems((current) => (current ?? []).filter((item) => item.id !== booster.id));
-      setActivePercent(data.active_percent);
-      setActiveSpins(data.active_spins);
       hapticNotify('success');
-      toast(`Бустер +${booster.percent}% активирован`, 'success');
+      toast(
+        data.queued
+          ? `Бустер +${booster.percent}% добавлен в очередь`
+          : `Бустер +${booster.percent}% активирован`,
+        'success',
+      );
+      await load();
       await refresh();
     } catch (error) {
       toast(error instanceof Error ? error.message : 'Не удалось активировать бустер', 'error');
@@ -789,7 +765,7 @@ function BoostersPanel() {
           </div>
         ) : (
           <p className="mt-3 text-[8px] text-muted/60">
-            Бустеры из кейсов лежат здесь, пока ты их не активируешь.
+            Активируй бустер, чтобы он начал действовать.
           </p>
         )}
       </div>
@@ -822,12 +798,41 @@ function BoostersPanel() {
                 disabled={busy !== null}
                 className="rounded-lg border border-teal/30 bg-teal/10 px-2.5 py-1.5 text-[8px] font-semibold text-teal disabled:opacity-50"
               >
-                {busy === booster.id ? '…' : 'Активировать'}
+                {busy === booster.id ? '…' : active ? 'В очередь' : 'Активировать'}
               </button>
             </div>
           ))
         )}
       </div>
+
+      {queue.length > 0 && (
+        <div className="mt-3 rounded-2xl border border-teal/15 bg-ink-800/60 p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-[8px] font-bold uppercase tracking-[0.12em] text-muted/55">
+              Очередь
+            </span>
+            <span className="text-[7px] text-muted/40">{queue.length}</span>
+          </div>
+          <div className="space-y-1.5">
+            {queue.map((booster, index) => (
+              <div
+                key={booster.id}
+                className="flex items-center gap-2 rounded-lg border border-white/[0.05] bg-ink-900/60 px-2.5 py-2"
+              >
+                <span className="flex h-5 w-5 items-center justify-center rounded bg-teal/10 font-display text-[8px] font-bold text-teal">
+                  {index + 1}
+                </span>
+                <span className="flex-1 text-[9px] text-paper">
+                  +{booster.percent}% · {booster.spins} круток
+                </span>
+                <span className="text-[7px] text-muted/40">
+                  {index === 0 ? 'следующий' : 'в очереди'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <Link
         to="/cases"

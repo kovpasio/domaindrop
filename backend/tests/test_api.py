@@ -466,6 +466,21 @@ async def test_upgrade_jackpot_zone_multiplies_reward(test_context, monkeypatch)
     assert regular_data["multiplier"] == pytest.approx(100 / 75)
 
 
+async def test_triple_spin_rolls_key_chance_for_each_drop(test_context, monkeypatch):
+    client, _Session, _fake = test_context
+    _payload, headers = await _auth(client)
+    monkeypatch.setattr("app.routers.spins.secrets.randbelow", lambda _n: 0)
+
+    result = await client.post("/api/spin", headers=headers, json={"roll_type": "normal", "times": 3})
+    assert result.status_code == 200, result.text
+    items = result.json()["items"]
+    assert len(items) == 3
+    assert all(item["key_dropped"] is True for item in items)
+
+    me = await client.get("/api/me", headers=headers)
+    assert me.json()["user"]["case_keys"] == 6
+
+
 async def test_upgrade_jackpot_applies_x5_multiplier(test_context, monkeypatch):
     client, Session, _fake = test_context
     payload, headers = await _auth(client)
@@ -634,6 +649,40 @@ async def test_case_booster_waits_in_inventory_until_activated(test_context):
 
     me = await client.get("/api/me", headers=headers)
     assert me.json()["stats"]["luck_boost_spins"] == 8
+
+
+async def test_booster_activation_while_active_goes_to_queue(test_context):
+    client, Session, _fake = test_context
+    payload, headers = await _auth(client)
+    async with Session() as session:
+        session.add_all(
+            [
+                UserBooster(
+                    user_id=payload["user"]["id"], kind="luck", percent=5.0, spins=5
+                ),
+                UserBooster(
+                    user_id=payload["user"]["id"], kind="luck", percent=10.0, spins=10
+                ),
+            ]
+        )
+        await session.commit()
+
+    state = await client.get("/api/boosters", headers=headers)
+    ids = sorted(item["id"] for item in state.json()["boosters"])
+
+    first = await client.post(f"/api/boosters/{ids[0]}/activate", headers=headers)
+    assert first.status_code == 200
+    assert first.json()["queued"] is False
+
+    second = await client.post(f"/api/boosters/{ids[1]}/activate", headers=headers)
+    assert second.status_code == 200
+    assert second.json()["queued"] is True
+    assert second.json()["active_percent"] == 5.0
+    assert second.json()["active_spins"] == 5
+
+    state = await client.get("/api/boosters", headers=headers)
+    assert len(state.json()["queue"]) == 1
+    assert state.json()["queue"][0]["percent"] == 10.0
 
 
 async def test_profile_frames_buy_and_equip(test_context):

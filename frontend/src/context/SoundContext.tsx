@@ -24,13 +24,24 @@ const SOUND_KEY = 'dropzone.sound';
 
 export function SoundProvider({ children }: { children: ReactNode }) {
   const [enabled, setEnabled] = useState(() => localStorage.getItem(SOUND_KEY) !== 'off');
-  const sounds = useRef<{ tick?: Howl; reveal?: Howl; jackpot?: Howl; coin?: Howl }>({});
+  const sounds = useRef<{
+    tick?: Howl;
+    reveal?: Howl;
+    legendary?: Howl;
+    mythic?: Howl;
+    coin?: Howl;
+  }>({});
 
   useEffect(() => {
     sounds.current = {
       tick: new Howl({ src: ['/sounds/tick.wav'], volume: 0.18, preload: true }),
       reveal: new Howl({ src: ['/sounds/reveal.wav'], volume: 0.5, preload: true }),
-      jackpot: new Howl({ src: ['/sounds/jackpot.wav'], volume: 0.6, preload: true }),
+      legendary: new Howl({
+        src: ['/sounds/legendary.wav'],
+        volume: 0.6,
+        preload: true,
+      }),
+      mythic: new Howl({ src: ['/sounds/mythic.wav'], volume: 0.65, preload: true }),
       coin: new Howl({ src: ['/sounds/coin.wav'], volume: 0.35, preload: true }),
     };
     return () => {
@@ -58,8 +69,10 @@ export function SoundProvider({ children }: { children: ReactNode }) {
   const playReveal = useCallback(
     (rarity: Rarity) => {
       if (!enabled) return;
-      if (rarity === 'legendary' || rarity === 'mythic') {
-        sounds.current.jackpot?.play();
+      if (rarity === 'mythic') {
+        sounds.current.mythic?.play();
+      } else if (rarity === 'legendary') {
+        sounds.current.legendary?.play();
       } else {
         sounds.current.reveal?.play();
       }

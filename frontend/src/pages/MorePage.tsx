@@ -137,9 +137,6 @@ export function MorePage() {
         </p>
       </div>
 
-      <p className="mt-5 pb-1 text-center text-[8px] uppercase tracking-[0.18em] text-muted/35">
-        Domain Drop · v1.0 · учебный проект
-      </p>
     </div>
   );
 }

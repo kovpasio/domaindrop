@@ -132,6 +132,7 @@ export interface Booster {
 
 export interface BoostersResponse {
   boosters: Booster[];
+  queue: Booster[];
   active_percent: number;
   active_spins: number;
 }
@@ -140,6 +141,7 @@ export interface BoosterActivateResult {
   booster: Booster;
   active_percent: number;
   active_spins: number;
+  queued: boolean;
 }
 
 export interface TaskClaimResult {

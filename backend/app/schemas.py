@@ -216,6 +216,7 @@ class BoosterOut(BaseModel):
 
 class BoostersOut(BaseModel):
     boosters: list[BoosterOut]
+    queue: list[BoosterOut]
     active_percent: float
     active_spins: int
 
@@ -224,6 +225,7 @@ class BoosterActivateOut(BaseModel):
     booster: BoosterOut
     active_percent: float
     active_spins: int
+    queued: bool = False
 
 
 class FrameOut(BaseModel):

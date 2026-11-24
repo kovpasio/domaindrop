@@ -137,6 +137,7 @@ class UserBooster(Base):
     created_at: Mapped[datetime] = mapped_column(
         UTCDateTime(), nullable=False, server_default=func.now()
     )
+    queued_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
     activated_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
 
 

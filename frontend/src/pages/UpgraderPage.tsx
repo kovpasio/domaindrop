@@ -46,9 +46,10 @@ function customChanceColor(percent: number): string {
 // The scale fills from the bottom (6 o'clock) symmetrically to both sides, so a
 // chance of N% covers N * 1.8deg on each half of the wheel. The lowest 1% of the
 // filled arc is a jackpot band: the arrow there pays x5.
-const JACKPOT_ZONE_SHARE = 0.01;
+const JACKPOT_ZONE_SHARE = 0.025;
 const JACKPOT_MULTIPLIER = 5;
 const JACKPOT_ACCENT = '#45D68A';
+const ARROW_SPIN_MS = 5_000;
 
 function filledHalfAngle(chance: number): number {
   return Math.min(179, Math.max(0.5, chance * 1.8));
@@ -198,10 +199,10 @@ export function UpgraderPage() {
         attemptChance,
       );
       const finalAngle = landingAngle(attemptChance, response.success, response.jackpot);
-      setArrowAngle(1440 + finalAngle);
+      setArrowAngle(1800 + finalAngle);
       setArrowMoving(true);
-      // The spin happens inside the tab, then the result appears in place.
-      await new Promise((resolve) => window.setTimeout(resolve, 3900));
+      // The arrow makes five smooth turns over five seconds.
+      await new Promise((resolve) => window.setTimeout(resolve, ARROW_SPIN_MS + 100));
       setArrowMoving(false);
       setResult(response);
       if (response.success && response.domain?.rarity === 'mythic') {
@@ -555,11 +556,6 @@ export function UpgraderPage() {
         </div>
       )}
 
-      <div className="mt-3 flex items-start gap-2 rounded-xl border border-rarity-legendary/20 bg-rarity-legendary/[0.05] px-3.5 py-3 text-[9px] leading-relaxed text-muted">
-        <Flame size={13} className="mt-0.5 shrink-0 text-rarity-legendary" />
-        При провале все выбранные домены сгорают. Mythic-домены тоже можно улучшать.
-      </div>
-
     </div>
   );
 }
@@ -719,7 +715,7 @@ function ChanceWheel({
             transformOrigin: '120px 120px',
             willChange: moving ? 'transform' : 'auto',
             transition: moving
-              ? 'transform 3.6s cubic-bezier(.42,.02,.12,1)'
+              ? 'transform 5s cubic-bezier(.16,.82,.22,1)'
               : 'none',
           }}
         >
