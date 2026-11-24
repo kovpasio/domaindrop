@@ -68,7 +68,9 @@ async def claim_task(
         raise HTTPException(status_code=409, detail="Задание ещё не выполнено")
 
     amount = int(task["reward"])
+    key_amount = int(task.get("keys", 0))
     locked.balance += amount
+    locked.case_keys += key_amount
     db.add(
         DailyTaskClaim(
             user_id=locked.id,
@@ -79,4 +81,10 @@ async def claim_task(
     )
     await db.commit()
     await db.refresh(locked)
-    return TaskClaimOut(key=task_key, amount=amount, balance=locked.balance)
+    return TaskClaimOut(
+        key=task_key,
+        amount=amount,
+        balance=locked.balance,
+        keys=key_amount,
+        case_keys=locked.case_keys,
+    )

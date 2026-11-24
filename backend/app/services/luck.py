@@ -51,6 +51,7 @@ class LuckProfile:
     level_luck: float
     inventory_luck: float
     achievement_luck: float
+    boost_luck: float
     total_luck: float
 
 
@@ -71,6 +72,7 @@ def luck_profile(
     total_spins: int,
     inventory_counts: dict[str, int],
     achievement_luck: float = 0.0,
+    boost_luck: float = 0.0,
 ) -> LuckProfile:
     index = level_index(total_spins)
     threshold, title = LEVELS[index]
@@ -81,7 +83,8 @@ def luck_profile(
         level_luck += LEVEL_LUCK_STEP
     inv_luck = inventory_luck(inventory_counts)
     achievement_luck = max(0.0, float(achievement_luck))
-    total_luck = min(TOTAL_LUCK_CAP, level_luck + inv_luck + achievement_luck)
+    boost_luck = max(0.0, float(boost_luck))
+    total_luck = min(TOTAL_LUCK_CAP, level_luck + inv_luck + achievement_luck + boost_luck)
     return LuckProfile(
         level=index + 1,
         title=title,
@@ -94,6 +97,7 @@ def luck_profile(
         level_luck=round(level_luck, 2),
         inventory_luck=round(inv_luck, 2),
         achievement_luck=round(achievement_luck, 2),
+        boost_luck=round(boost_luck, 2),
         total_luck=round(total_luck, 2),
     )
 

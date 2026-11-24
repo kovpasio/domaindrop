@@ -64,6 +64,9 @@ class User(Base):
         String(32), nullable=False, default="midnight", server_default="midnight"
     )
     theme_accent: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    case_keys: Mapped[int] = mapped_column(Integer, nullable=False, default=3, server_default="3")
+    luck_boost_percent: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    luck_boost_spins: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     is_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
     is_banned: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
     ban_reason: Mapped[str | None] = mapped_column(String(256), nullable=True)
@@ -88,6 +91,22 @@ class CatalogMeta(Base):
 
     key: Mapped[str] = mapped_column(String(64), primary_key=True)
     value: Mapped[str] = mapped_column(String(128), nullable=False)
+
+
+class CaseOpening(Base):
+    __tablename__ = "case_openings"
+    __table_args__ = (Index("ix_case_openings_user_created", "user_id", "created_at"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    case_key: Mapped[str] = mapped_column(String(32), nullable=False)
+    offers: Mapped[list[dict]] = mapped_column(JSON, nullable=False)
+    claimed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = mapped_column(
+        UTCDateTime(), nullable=False, server_default=func.now()
+    )
 
 
 class UserFrame(Base):

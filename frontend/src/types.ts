@@ -13,6 +13,7 @@ export interface User {
   frame_key: string;
   theme_key: string;
   theme_accent: string | null;
+  case_keys: number;
   is_admin: boolean;
   is_banned: boolean;
   created_at: string;
@@ -47,6 +48,8 @@ export interface MeStats {
   upgrades_success: number;
   pity_counter: number;
   pity_threshold: number;
+  luck_boost_percent: number;
+  luck_boost_spins: number;
 }
 
 export interface DailyTask {
@@ -56,6 +59,7 @@ export interface DailyTask {
   target: number;
   progress: number;
   reward: number;
+  keys: number;
   claimed: boolean;
   can_claim: boolean;
 }
@@ -108,6 +112,8 @@ export interface TaskClaimResult {
   key: string;
   amount: number;
   balance: number;
+  keys: number;
+  case_keys: number;
 }
 
 export interface LuckProgress {
@@ -120,7 +126,53 @@ export interface LuckProgress {
   level_luck: number;
   inventory_luck: number;
   achievement_luck: number;
+  boost_luck: number;
   total_luck: number;
+}
+
+export interface CaseOffer {
+  kind: 'domain' | 'cosmetic' | 'booster';
+  title: string;
+  description: string;
+  domain_id: number | null;
+  price: number | null;
+  rarity: Rarity | null;
+  frame_key: string | null;
+  primary: string | null;
+  luck_percent: number | null;
+  spins: number | null;
+}
+
+export interface CaseInfo {
+  key: string;
+  title: string;
+  description: string;
+  cost: number;
+  accent: string;
+  rarities: Rarity[];
+}
+
+export interface CaseOpening {
+  opening_id: number;
+  case_key: string;
+  title: string;
+  keys: number;
+  offers: CaseOffer[];
+}
+
+export interface CasesResponse {
+  cases: CaseInfo[];
+  keys: number;
+  pending: CaseOpening | null;
+}
+
+export interface CaseChooseResult {
+  kind: string;
+  title: string;
+  description: string;
+  keys: number;
+  balance: number;
+  message: string;
 }
 
 export interface MeResponse {

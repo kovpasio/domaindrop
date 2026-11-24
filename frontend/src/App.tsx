@@ -19,6 +19,7 @@ import { StatisticsPage } from '@/pages/StatisticsPage';
 import { AchievementsPage } from '@/pages/AchievementsPage';
 import { FramesPage } from '@/pages/FramesPage';
 import { ThemesPage } from '@/pages/ThemesPage';
+import { CasesPage } from '@/pages/CasesPage';
 import { applyTheme } from '@/lib/themes';
 
 export default function App() {
@@ -75,6 +76,7 @@ export default function App() {
         <Route path="/achievements" element={<AchievementsPage />} />
         <Route path="/frames" element={<FramesPage />} />
         <Route path="/themes" element={<ThemesPage />} />
+        <Route path="/cases" element={<CasesPage />} />
         <Route path="/admin" element={<AdminPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

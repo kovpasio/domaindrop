@@ -68,7 +68,10 @@ export function ProfilePage() {
       applyBalance(result.balance);
       playCoin();
       hapticNotify('success');
-      toast(`Награда за задание: +${formatNumber(result.amount)} D`, 'success');
+      toast(
+        `Награда за задание: +${formatNumber(result.amount)} D${result.keys ? ` и ${result.keys} ключ.` : ''}`,
+        'success',
+      );
       const response = await api.tasks();
       setTasks(response.tasks);
       setTasksResetAt(response.reset_at);
@@ -297,7 +300,12 @@ export function ProfilePage() {
                         )}
                         <span className="text-[10px] font-semibold text-paper">{task.title}</span>
                       </div>
-                      <div className="mt-0.5 text-[8px] text-muted/60">{task.description}</div>
+                      <div className="mt-0.5 text-[8px] text-muted/60">
+                        {task.description}
+                        {task.keys > 0 && (
+                          <span className="ml-1 text-gold">+{task.keys} ключ.</span>
+                        )}
+                      </div>
                     </div>
                     <button
                       type="button"

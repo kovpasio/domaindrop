@@ -7,6 +7,9 @@ import type {
   AuthResponse,
   AutosellSettings,
   BulkSellResult,
+  CaseChooseResult,
+  CaseOpening,
+  CasesResponse,
   DailyBonusResponse,
   DailyTasksResponse,
   Domain,
@@ -206,6 +209,19 @@ export const api = {
     request<ThemeResponse>('/theme', {
       method: 'PUT',
       body: JSON.stringify({ theme_key: themeKey, accent_color: accentColor }),
+    }),
+
+  cases: () => request<CasesResponse>('/cases'),
+
+  openCase: (key: string) =>
+    request<CaseOpening>(`/cases/${encodeURIComponent(key)}/open`, {
+      method: 'POST',
+    }),
+
+  chooseCaseReward: (openingId: number, offerIndex: number) =>
+    request<CaseChooseResult>(`/cases/openings/${openingId}/choose`, {
+      method: 'POST',
+      body: JSON.stringify({ offer_index: offerIndex }),
     }),
 
   claimTask: (key: string) =>

@@ -20,6 +20,7 @@ from app.routers import (
     achievements,
     admin,
     auth,
+    cases,
     domains,
     earnings,
     frames,
@@ -138,6 +139,7 @@ async def test_context(monkeypatch):
         achievements.router,
         frames.router,
         theme.router,
+        cases.router,
     ):
         app.include_router(router, prefix="/api")
     app.dependency_overrides[get_db] = override_db
@@ -470,10 +472,11 @@ async def test_daily_tasks_and_player_stats(test_context):
     assert tasks.status_code == 200, tasks.text
     payload = tasks.json()
     assert len(payload["tasks"]) == 3
+    assert [task["target"] for task in payload["tasks"]] == [50, 10, 5]
     assert all(task["progress"] == 0 for task in payload["tasks"])
     assert all(task["can_claim"] is False for task in payload["tasks"])
 
-    incomplete = await client.post("/api/tasks/spins_10/claim", headers=headers)
+    incomplete = await client.post("/api/tasks/spins_50/claim", headers=headers)
     assert incomplete.status_code == 409
 
     achievements = await client.get("/api/achievements", headers=headers)
@@ -527,6 +530,38 @@ async def test_theme_can_be_saved_and_is_returned_in_profile(test_context):
 
     me = await client.get("/api/me", headers=headers)
     assert me.json()["user"]["theme_key"] == "ocean"
+
+
+async def test_case_opening_offers_three_rewards_and_choice(test_context):
+    client, _Session, _fake = test_context
+    _payload, headers = await _auth(client)
+
+    cases = await client.get("/api/cases", headers=headers)
+    assert cases.status_code == 200, cases.text
+    assert cases.json()["keys"] == 3
+    assert len(cases.json()["cases"]) == 3
+
+    opened = await client.post("/api/cases/starter/open", headers=headers)
+    assert opened.status_code == 200, opened.text
+    opening = opened.json()
+    assert opening["keys"] == 2
+    assert len(opening["offers"]) == 3
+    assert all(
+        offer["kind"] in {"domain", "cosmetic", "booster"}
+        for offer in opening["offers"]
+    )
+
+    chosen = await client.post(
+        f"/api/cases/openings/{opening['opening_id']}/choose",
+        headers=headers,
+        json={"offer_index": 0},
+    )
+    assert chosen.status_code == 200, chosen.text
+    assert chosen.json()["keys"] == 2
+    assert chosen.json()["kind"] == opening["offers"][0]["kind"]
+
+    me = await client.get("/api/me", headers=headers)
+    assert me.json()["user"]["case_keys"] == 2
 
 
 async def test_profile_frames_buy_and_equip(test_context):

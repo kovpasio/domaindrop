@@ -103,10 +103,16 @@ async def spin(
                 "collection": sum(inventory_counts.values()),
             }
         )
+        boost_luck = (
+            float(locked_user.luck_boost_percent)
+            if locked_user.luck_boost_spins > 0
+            else 0.0
+        )
         progress = luck_profile(
             locked_user.total_spins,
             inventory_counts,
             achievement_luck,
+            boost_luck,
         )
         chances = apply_luck(roll["rarity_chances"], progress.total_luck)
         autosell = await get_or_create_settings(db, locked_user.id)
@@ -135,6 +141,10 @@ async def spin(
             if auto_sold:
                 locked_user.balance += sale_price
             locked_user.total_spins += 1
+            if locked_user.luck_boost_spins > 0:
+                locked_user.luck_boost_spins -= 1
+                if locked_user.luck_boost_spins == 0:
+                    locked_user.luck_boost_percent = 0
             if domain.rarity == PITY_RARITY:
                 locked_user.pity_counter = 0
             else:

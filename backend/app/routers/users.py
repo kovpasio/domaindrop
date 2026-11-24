@@ -52,7 +52,8 @@ async def build_me(db: AsyncSession, user: User) -> MeOut:
         "collection": collection_count,
     }
     _achievements, achievement_luck = achievement_payload(achievement_stats)
-    progress = luck_profile(user.total_spins, by_rarity, achievement_luck)
+    boost_luck = float(user.luck_boost_percent) if user.luck_boost_spins > 0 else 0.0
+    progress = luck_profile(user.total_spins, by_rarity, achievement_luck, boost_luck)
     return MeOut(
         user=UserOut.model_validate(user),
         progress=LuckProgressOut(
@@ -65,6 +66,7 @@ async def build_me(db: AsyncSession, user: User) -> MeOut:
             level_luck=progress.level_luck,
             inventory_luck=progress.inventory_luck,
             achievement_luck=progress.achievement_luck,
+            boost_luck=progress.boost_luck,
             total_luck=progress.total_luck,
         ),
         stats=MeStats(
@@ -83,6 +85,8 @@ async def build_me(db: AsyncSession, user: User) -> MeOut:
             **stats,
             pity_counter=int(user.pity_counter),
             pity_threshold=PITY_THRESHOLD,
+            luck_boost_percent=float(user.luck_boost_percent) if user.luck_boost_spins > 0 else 0.0,
+            luck_boost_spins=int(user.luck_boost_spins),
         ),
     )
 

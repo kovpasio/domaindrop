@@ -27,6 +27,7 @@ class UserOut(BaseModel):
     frame_key: str
     theme_key: str
     theme_accent: str | None
+    case_keys: int
     is_admin: bool
     is_banned: bool
     created_at: datetime
@@ -85,6 +86,8 @@ class MeStats(BaseModel):
     upgrades_success: int
     pity_counter: int
     pity_threshold: int
+    luck_boost_percent: float
+    luck_boost_spins: int
 
 
 class DailyTaskOut(BaseModel):
@@ -94,6 +97,7 @@ class DailyTaskOut(BaseModel):
     target: int
     progress: int
     reward: int
+    keys: int = 0
     claimed: bool
     can_claim: bool
 
@@ -108,6 +112,8 @@ class TaskClaimOut(BaseModel):
     key: str
     amount: int
     balance: int
+    keys: int
+    case_keys: int
 
 
 class AchievementOut(BaseModel):
@@ -123,6 +129,55 @@ class AchievementOut(BaseModel):
 class AchievementsOut(BaseModel):
     achievements: list[AchievementOut]
     total_luck: float
+
+
+class CaseOfferOut(BaseModel):
+    kind: str
+    title: str
+    description: str
+    domain_id: int | None = None
+    price: int | None = None
+    rarity: str | None = None
+    frame_key: str | None = None
+    primary: str | None = None
+    luck_percent: float | None = None
+    spins: int | None = None
+
+
+class CaseInfoOut(BaseModel):
+    key: str
+    title: str
+    description: str
+    cost: int
+    accent: str
+    rarities: list[str]
+
+
+class CaseOpenOut(BaseModel):
+    opening_id: int
+    case_key: str
+    title: str
+    keys: int
+    offers: list[CaseOfferOut]
+
+
+class CasesOut(BaseModel):
+    cases: list[CaseInfoOut]
+    keys: int
+    pending: CaseOpenOut | None = None
+
+
+class CaseChooseIn(BaseModel):
+    offer_index: int = Field(ge=0, le=2)
+
+
+class CaseChooseOut(BaseModel):
+    kind: str
+    title: str
+    description: str
+    keys: int
+    balance: int
+    message: str
 
 
 class ThemeOut(BaseModel):
@@ -163,6 +218,7 @@ class LuckProgressOut(BaseModel):
     level_luck: float
     inventory_luck: float
     achievement_luck: float
+    boost_luck: float = 0.0
     total_luck: float
 
 

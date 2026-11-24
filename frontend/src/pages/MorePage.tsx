@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import {
   BarChart3,
   ChevronRight,
+  KeyRound,
   Radio,
   Settings2,
   Shield,
@@ -33,6 +34,13 @@ const LINKS = [
     description: 'Открытые достижения и бонус к удаче',
     icon: Trophy,
     color: '#43D6C5',
+  },
+  {
+    to: '/cases',
+    label: 'Кейсы',
+    description: 'Ключи, случайные награды и бустеры',
+    icon: KeyRound,
+    color: '#F2A54A',
   },
   {
     to: '/frames',

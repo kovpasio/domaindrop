@@ -7,9 +7,12 @@ import {
   Check,
   CircleSlash2,
   Filter,
+  KeyRound,
   PackageOpen,
+  Palette,
   Sparkles,
   Tag,
+  Zap,
   Wallet,
   X,
 } from 'lucide-react';
@@ -17,11 +20,12 @@ import { api } from '@/api/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { useSound } from '@/context/SoundContext';
+import { Avatar } from '@/components/Avatar';
 import { BottomSheet } from '@/components/BottomSheet';
 import { EmptyState } from '@/components/EmptyState';
 import { PageTitle } from '@/components/PageTitle';
 import { RarityBadge } from '@/components/RarityBadge';
-import type { InventoryItem, Rarity, Zone } from '@/types';
+import type { InventoryItem, ProfileFrame, Rarity, Zone } from '@/types';
 import {
   cn,
   formatNumber,
@@ -34,12 +38,14 @@ import {
 
 type ZoneFilter = 'all' | Zone;
 type RarityFilter = 'all' | Rarity;
+type InventoryTab = 'domains' | 'cosmetics' | 'boosters';
 
 export function InventoryPage() {
   const { applyBalance, refresh } = useAuth();
   const { toast } = useToast();
   const { playCoin } = useSound();
   const [items, setItems] = useState<InventoryItem[] | null>(null);
+  const [tab, setTab] = useState<InventoryTab>('domains');
   const [zone, setZone] = useState<ZoneFilter>('all');
   const [rarity, setRarity] = useState<RarityFilter>('all');
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -179,7 +185,7 @@ export function InventoryPage() {
       <PageTitle
         eyebrow="collection"
         title="Инвентарь"
-        description="Домены из спинов. Выбирайте несколько и продавайте одной сделкой."
+        description="Домены, косметика и активные бустеры."
         action={
           <Link
             to="/roulette"
@@ -191,6 +197,36 @@ export function InventoryPage() {
         }
       />
 
+      <div className="mb-4 grid grid-cols-3 gap-1 rounded-xl border border-white/[0.06] bg-ink-800 p-1">
+        {[
+          { key: 'domains', label: 'Домены', icon: PackageOpen },
+          { key: 'cosmetics', label: 'Косметика', icon: Palette },
+          { key: 'boosters', label: 'Бустеры', icon: Zap },
+        ].map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => {
+              setTab(key as InventoryTab);
+              hapticImpact('light');
+            }}
+            className={cn(
+              'flex flex-col items-center gap-1 rounded-lg py-2 text-[8px] font-semibold transition',
+              tab === key ? 'bg-accent/15 text-accent-soft' : 'text-muted/55',
+            )}
+          >
+            <Icon size={13} />
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'cosmetics' ? (
+        <CosmeticsPanel />
+      ) : tab === 'boosters' ? (
+        <BoostersPanel />
+      ) : (
+        <>
       <div className="mb-4 grid grid-cols-3 gap-2">
         <div className="relative col-span-2 overflow-hidden rounded-xl border border-white/[0.06] bg-ink-800 p-3.5">
           <div className="label mb-1.5">Стоимость коллекции</div>
@@ -453,6 +489,165 @@ export function InventoryPage() {
           </div>
         </div>
       </BottomSheet>
+        </>
+      )}
+    </div>
+  );
+}
+
+function CosmeticsPanel() {
+  const { me } = useAuth();
+  const [frames, setFrames] = useState<ProfileFrame[] | null>(null);
+
+  useEffect(() => {
+    void api
+      .frames()
+      .then((data) => setFrames(data.frames))
+      .catch(() => setFrames([]));
+  }, []);
+
+  const sorted = [...(frames ?? [])].sort(
+    (a, b) => Number(b.owned) - Number(a.owned) || a.title.localeCompare(b.title),
+  );
+  const ownedCount = sorted.filter((frame) => frame.owned).length;
+
+  return (
+    <div>
+      <div className="mb-3 flex items-center justify-between rounded-2xl border border-rarity-epic/20 bg-rarity-epic/[0.06] px-4 py-3">
+        <div>
+          <div className="text-[10px] font-semibold text-paper">Косметика профиля</div>
+          <div className="mt-0.5 text-[8px] text-muted/60">Рамки, открытые и купленные</div>
+        </div>
+        <div className="font-display text-2xl font-semibold text-rarity-epic">
+          {ownedCount}
+          <span className="ml-0.5 text-[10px] text-muted/40">/ {sorted.length}</span>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {frames === null ? (
+          <div className="h-24 animate-pulse rounded-2xl border border-white/[0.04] bg-white/[0.02]" />
+        ) : (
+          sorted.map((frame) => (
+            <div
+              key={frame.key}
+              className={cn(
+                'flex items-center gap-3 rounded-2xl border p-3',
+                frame.owned
+                  ? 'border-white/[0.07] bg-ink-800'
+                  : 'border-white/[0.04] bg-ink-800/45 opacity-60',
+              )}
+            >
+              <Avatar
+                name={me?.user.display_name ?? 'Domain Drop'}
+                size={42}
+                frame={frame.key}
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-semibold text-paper">{frame.title}</span>
+                  {!frame.owned && <span className="text-[8px] text-muted/40">🔒</span>}
+                </div>
+                <div className="mt-0.5 truncate text-[8px] text-muted/55">
+                  {frame.description}
+                </div>
+              </div>
+              <span
+                className={cn(
+                  'rounded-md border px-1.5 py-1 text-[7px] font-semibold',
+                  frame.equipped
+                    ? 'border-teal/25 bg-teal/10 text-teal'
+                    : frame.owned
+                      ? 'border-white/[0.06] text-muted/45'
+                      : 'border-gold/15 text-gold/60',
+                )}
+              >
+                {frame.equipped
+                  ? 'на аватаре'
+                  : frame.owned
+                    ? 'в коллекции'
+                    : frame.achievement
+                      ? 'за достижение'
+                      : frame.price === 0
+                        ? 'базовая'
+                        : `${formatNumber(frame.price ?? 0)} D`}
+              </span>
+            </div>
+          ))
+        )}
+      </div>
+
+      <Link
+        to="/frames"
+        className="mt-3 flex items-center justify-center gap-1.5 rounded-xl border border-accent/25 bg-accent/10 py-3 text-[10px] font-semibold text-accent-soft"
+      >
+        <Palette size={13} /> Открыть магазин рамок
+      </Link>
+    </div>
+  );
+}
+
+function BoostersPanel() {
+  const { me } = useAuth();
+  const boost = me?.stats;
+  const boostPercent = boost?.luck_boost_percent ?? 0;
+  const boostSpins = boost?.luck_boost_spins ?? 0;
+  const active = boostSpins > 0;
+
+  return (
+    <div>
+      <div
+        className={cn(
+          'rounded-2xl border p-4',
+          active
+            ? 'border-teal/25 bg-gradient-to-br from-teal/[0.09] to-transparent'
+            : 'border-white/[0.06] bg-ink-800',
+        )}
+      >
+        <div className="flex items-center gap-2">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-teal/25 bg-teal/10 text-teal">
+            <Zap size={16} />
+          </div>
+          <div>
+            <div className="text-[11px] font-semibold text-paper">Бустер удачи</div>
+            <div className="text-[8px] text-muted/55">
+              {active ? 'активен' : 'сейчас не активен'}
+            </div>
+          </div>
+        </div>
+        {active ? (
+          <>
+            <div className="mt-3 flex items-end justify-between">
+              <span className="font-display text-2xl font-semibold text-teal">
+                +{boostPercent.toFixed(0)}%
+              </span>
+              <span className="text-[9px] text-muted">
+                осталось {boostSpins} круток
+              </span>
+            </div>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.07]">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-teal to-accent"
+                style={{ width: `${Math.min(100, boostSpins * 4)}%` }}
+              />
+            </div>
+          </>
+        ) : (
+          <p className="mt-3 text-[8px] leading-relaxed text-muted/60">
+            Бустеры выпадают в кейсах. Они временно повышают шансы на редкие домены.
+          </p>
+        )}
+        <Link
+          to="/cases"
+          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-gold/25 bg-gold/10 py-2.5 text-[9px] font-semibold text-gold"
+        >
+          <KeyRound size={11} /> Открыть кейс
+        </Link>
+      </div>
+
+      <div className="mt-3 rounded-2xl border border-white/[0.05] bg-ink-800/50 p-3 text-[8px] leading-relaxed text-muted/55">
+        Бустер действует на все крутки, включая ×3. После последней крутки он исчезает.
+      </div>
     </div>
   );
 }
